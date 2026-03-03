@@ -6,7 +6,6 @@ import {
 import bcrypt from 'bcryptjs';
 import { prisma } from 'lib/prisma';
 import { CreateAuthDto } from './dto/create-auth.dto';
-import { Role } from '@prisma/client';
 import { LoginAuthDto } from './dto/login-auth.dto';
 @Injectable()
 export class AuthService {
@@ -28,7 +27,6 @@ export class AuthService {
           password: hashedPassword,
           phoneNumber: createAuthDto.phoneNumber,
           address: createAuthDto.address,
-          role: Role.USER,
           image: createAuthDto.image as string,
         },
       });
