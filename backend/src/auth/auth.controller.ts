@@ -2,13 +2,14 @@ import {
   Controller,
   Post,
   Body,
-  BadRequestException,
   Res,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
@@ -24,13 +25,11 @@ export class AuthController {
   }
 
   @Post('signin')
-  async signin(@Body() loginAuthDto: LoginAuthDto, @Res() res: Response) {
+  async signin(
+    @Body() loginAuthDto: LoginAuthDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const response = await this.authService.signin(loginAuthDto);
-    if (!response) {
-      throw new BadRequestException(
-        "didn't received any response from service layer",
-      );
-    }
     res.cookie('accessToken', response.accessToken, {
       httpOnly: true,
       secure:
@@ -39,5 +38,32 @@ export class AuthController {
           : false,
       maxAge: 900000,
     });
+    res.cookie('refreshToken', response.refreshToken, {
+      httpOnly: true,
+      secure:
+        this.configService.get<string>('NODE_ENV') === 'production'
+          ? true
+          : false,
+      maxAge: 604800000,
+    });
+
+    return {
+      message: 'Login successful',
+    };
+  }
+
+  @Post('refresh')
+  refresh(@Req() req: Request) {
+    const accessToken = req.cookies['accessToken'] as string;
+    const refreshToken = req.cookies['refreshToken'] as string;
+
+    if (!accessToken && !refreshToken) {
+      throw new BadRequestException('Tokens are missing, please re-login');
+    }
+    if (accessToken) {
+      throw new BadRequestException(
+        'Access token is still valid, no need to refresh',
+      );
+    }
   }
 }

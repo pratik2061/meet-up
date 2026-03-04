@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  Injectable,
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { TokenPayLoad } from 'src/types/token.payload';
 
+@Injectable()
 export class TokenGenerate {
   constructor(
     private readonly jwtService: JwtService,
@@ -15,12 +17,10 @@ export class TokenGenerate {
   generateToken(payload: TokenPayLoad) {
     try {
       const accessToken = this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<number>('ACCESS_EXPIRES_IN'),
+        expiresIn: Number(this.configService.get<number>('ACCESS_EXPIRES_IN')),
       });
       const refreshToken = this.jwtService.sign(payload, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-        expiresIn: this.configService.get<number>('REFRESH_EXPIRES_IN'),
+        expiresIn: Number(this.configService.get<number>('REFRESH_EXPIRES_IN')),
       });
       return { accessToken, refreshToken };
     } catch (error) {
