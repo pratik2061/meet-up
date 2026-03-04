@@ -64,4 +64,8 @@ export class CreateAuthDto {
   @IsEnum(Role, { message: 'Role is not valid' })
   @IsOptional()
   role?: Role;
+
+  @IsString()
+  @IsOptional()
+  accessToken?: string;
 }
