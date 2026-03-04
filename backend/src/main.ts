@@ -18,6 +18,7 @@ async function bootstrap() {
     Credential: true,
     origin: process.env.CLIENT_URL,
   });
+  app.setGlobalPrefix('api');
 
   await app.listen(process.env.PORT ?? 3000);
 }
