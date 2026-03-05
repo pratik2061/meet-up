@@ -9,9 +9,13 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { TokenPayLoad } from 'src/types/token.payload';
 import { TokenGenerate } from 'src/utils/token.generate';
+import { verifyToken } from 'src/utils/verify.token';
 @Injectable()
 export class AuthService {
-  constructor(private readonly token: TokenGenerate) {}
+  constructor(
+    private readonly token: TokenGenerate,
+    private readonly verifyTokenService: verifyToken,
+  ) {}
   async create(createAuthDto: CreateAuthDto) {
     try {
       const checkUser = await prisma.user.findUnique({
@@ -86,6 +90,61 @@ export class AuthService {
         accessToken,
         refreshToken,
       };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async logout(id: string) {
+    try {
+      const checkUser = await prisma.user.findUnique({
+        where: {
+          id: id,
+        },
+      });
+      if (!checkUser) {
+        throw new BadRequestException('user doesnot exists');
+      }
+      await prisma.user.update({
+        where: {
+          id: checkUser.id,
+        },
+        data: {
+          refreshToken: null,
+        },
+      });
+      return { status: true };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Internal server error');
+    }
+  }
+
+  async refresh(refreshToken: string) {
+    try {
+      if (!refreshToken) {
+        throw new BadRequestException("Didn't received a refreshToken");
+      }
+      const result =
+        await this.verifyTokenService.TokenVerification(refreshToken);
+
+      if (!result || !result.isMatch) {
+        throw new BadRequestException(
+          'No any response from token  verification or invalid token',
+        );
+      }
+      const payload: TokenPayLoad = {
+        id: result.userId,
+        email: result.userEmail,
+        createdAt: result.userCreatedAt,
+      };
+      const { accessToken } = this.token.generateToken(payload);
+      return { accessToken };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
