@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsEmail,
@@ -11,7 +12,12 @@ import {
   MinLength,
 } from 'class-validator';
 import { Role } from 'generated/prisma/enums';
+
 export class CreateAuthDto {
+  @ApiProperty({
+    example: 'John Doe',
+    description: 'The full name of the user',
+  })
   @IsString()
   @Matches(/^[A-Za-z ]+$/, {
     message: 'fullName can only contain letters and spaces',
@@ -22,6 +28,10 @@ export class CreateAuthDto {
   @Transform(({ value }: { value: string }) => value?.trim())
   fullName!: string;
 
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'The email address of the user',
+  })
   @IsEmail()
   @Length(5, 150, {
     message: 'email must be between 5 and 150 characters long',
@@ -30,6 +40,10 @@ export class CreateAuthDto {
   @Transform(({ value }: { value: string }) => value?.trim())
   email!: string;
 
+  @ApiProperty({
+    example: 'password123',
+    description: 'The password of the user',
+  })
   @IsString()
   @Length(8, 50, {
     message: 'password must be between 8 and 50 characters long',
@@ -37,6 +51,10 @@ export class CreateAuthDto {
   @IsNotEmpty({ message: 'password is required' })
   password!: string;
 
+  @ApiProperty({
+    example: '123 Main St, City, Country',
+    description: 'The address of the user',
+  })
   @IsString()
   @Matches(/^[A-Za-z0-9\-, ]+$/, {
     message: 'Address can only contain letters, numbers, hyphen, and spaces',
@@ -48,6 +66,10 @@ export class CreateAuthDto {
   @Transform(({ value }: { value: string }) => value?.trim())
   address!: string;
 
+  @ApiProperty({
+    example: '1234567890',
+    description: 'The phone number of the user (exactly 10 digits)',
+  })
   @IsString()
   @Matches(/^\d+$/, {
     message: 'Phone number must contain only digits',
@@ -57,14 +79,20 @@ export class CreateAuthDto {
   @Transform(({ value }: { value: string }) => value?.trim())
   phoneNumber!: string;
 
+  @ApiPropertyOptional({
+    example: 'https://example.com/avatar.jpg',
+    description: 'The profile image URL',
+  })
   @IsString()
   @IsOptional()
   image?: string;
 
+  @ApiPropertyOptional({ enum: Role, description: 'The role of the user' })
   @IsEnum(Role, { message: 'Role is not valid' })
   @IsOptional()
   role?: Role;
 
+  @ApiPropertyOptional({ description: 'OAuth access token, if applicable' })
   @IsString()
   @IsOptional()
   accessToken?: string;

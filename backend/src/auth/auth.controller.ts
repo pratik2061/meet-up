@@ -1,20 +1,23 @@
 import {
-  Controller,
-  Post,
-  Body,
-  Res,
-  Req,
   BadRequestException,
+  Body,
+  Controller,
   HttpCode,
+  Post,
+  Req,
+  Res,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
+import { TokenPayLoad } from 'src/types/token.payload';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
-import { Request, Response } from 'express';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { TokenPayLoad } from 'src/types/token.payload';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -23,11 +26,28 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  @ApiOperation({ summary: 'User Signup', description: 'Register a new user.' })
+  @ApiResponse({
+    status: 201,
+    description: 'The user has been successfully created.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request / Validation Error.' })
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('signup')
   async create(@Body() createAuthDto: CreateAuthDto) {
     return await this.authService.create(createAuthDto);
   }
 
+  @ApiOperation({
+    summary: 'User Signin',
+    description: 'Login to the application.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Login successful. Sets access and refresh tokens in cookies.',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid credentials.' })
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('signin')
   @HttpCode(200)
   async signin(
@@ -57,6 +77,16 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary: 'User Logout',
+    description: 'Logout by clearing tokens.',
+  })
+  @ApiResponse({ status: 200, description: 'Logout successful.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Refresh token missing or invalid.',
+  })
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
     const refreshToken = req.cookies['refreshToken'] as string;
@@ -88,6 +118,13 @@ export class AuthController {
     };
   }
 
+  @ApiOperation({
+    summary: 'Refresh Tokens',
+    description: 'Refresh access token using refresh token cookie.',
+  })
+  @ApiResponse({ status: 200, description: 'Access token refresh successful.' })
+  @ApiResponse({ status: 400, description: 'Tokens missing or invalid.' })
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('refresh')
   async refresh(
     @Req() req: Request,

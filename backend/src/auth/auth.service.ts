@@ -37,9 +37,10 @@ export class AuthService {
           image: createAuthDto.image as string,
         },
       });
+      const { password, ...resData } = createUser;
       return {
         message: 'user created successfully',
-        createUser,
+        resData,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
