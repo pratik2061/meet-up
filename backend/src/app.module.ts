@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { WebRtcModule } from './web-rtc/web-rtc.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { APP_GUARD } from '@nestjs/core';
       isGlobal: true,
     }),
     AuthModule,
+    WebRtcModule,
   ],
   controllers: [AppController],
   providers: [
