@@ -17,9 +17,11 @@ export class TokenGenerate {
   generateToken(payload: TokenPayLoad) {
     try {
       const accessToken = this.jwtService.sign(payload, {
+        secret: this.configService.get('ACCESS_SECRET'),
         expiresIn: Number(this.configService.get<number>('ACCESS_EXPIRES_IN')),
       });
       const refreshToken = this.jwtService.sign(payload, {
+        secret: this.configService.get('REFRESH_SECRET'),
         expiresIn: Number(this.configService.get<number>('REFRESH_EXPIRES_IN')),
       });
       return { accessToken, refreshToken };
