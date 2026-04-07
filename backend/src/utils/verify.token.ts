@@ -3,10 +3,14 @@ import { JwtService } from '@nestjs/jwt';
 import { prisma } from 'lib/prisma';
 import { TokenPayLoad } from 'src/types/token.payload';
 import bcrypt from 'bcryptjs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class verifyToken {
-  constructor(private readonly jwtServce: JwtService) {}
+  constructor(
+    private readonly jwtServce: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async TokenVerification(token: string) {
     try {
@@ -14,7 +18,9 @@ export class verifyToken {
         throw new BadRequestException('Invalid token format');
       }
 
-      const decode: TokenPayLoad = this.jwtServce.verify(token);
+      const decode: TokenPayLoad = this.jwtServce.verify(token, {
+        secret: this.configService.get('REFRESH_SECRET'),
+      });
 
       const getUser = await prisma.user.findUnique({
         where: { id: decode.id },
