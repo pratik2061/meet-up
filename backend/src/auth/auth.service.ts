@@ -34,7 +34,7 @@ export class AuthService {
           password: hashedPassword,
           phoneNumber: createAuthDto.phoneNumber,
           address: createAuthDto.address,
-          image: createAuthDto.image as string,
+          profileImageId: createAuthDto.profileImageId,
         },
       });
       const { password, ...resData } = createUser;

@@ -6,6 +6,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
   MaxLength,
@@ -80,12 +81,13 @@ export class CreateAuthDto {
   phoneNumber!: string;
 
   @ApiPropertyOptional({
-    example: 'https://example.com/avatar.jpg',
-    description: 'The profile image URL',
+    example: '1234567890',
+    description: 'The profile image Id related to model Image',
   })
+  @IsUUID('4', { message: 'profileImageId must be a valid UUID' })
   @IsString()
   @IsOptional()
-  image?: string;
+  profileImageId?: string;
 
   @ApiPropertyOptional({ enum: Role, description: 'The role of the user' })
   @IsEnum(Role, { message: 'Role is not valid' })
