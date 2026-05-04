@@ -1,13 +1,15 @@
 import { Outlet } from "react-router-dom";
-import { Sidebar } from "../ui/sidebar";
 import { SidebarProvider } from "../ui/sidebar";
+import { AppSidebar } from "../ui/app-sidebar";
+import { Navbar } from "../ui/navbar";
 
 const RootLayout = () => {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen  w-full">
-        <Sidebar />
+        <AppSidebar/>
         <main className="flex-1 overflow-hidden">
+          <Navbar/>
           <Outlet />
         </main>
       </div>
