@@ -7,9 +7,9 @@ const RootLayout = () => {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen  w-full">
-        <AppSidebar/>
+        <AppSidebar />
         <main className="flex-1 overflow-hidden">
-          <Navbar/>
+          <Navbar />
           <Outlet />
         </main>
       </div>

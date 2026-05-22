@@ -1,12 +1,15 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from "./components/layout/RootLayout";
-import { AuthPage } from "./pages/auth/AuthPage";
+import { AuthContainer } from "./pages/auth/Auth.container";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
 
 function App() {
+  const queryClient = new QueryClient();
   const router = createBrowserRouter([
     {
       path: "/login",
-      element: <AuthPage />,
+      element: <AuthContainer />,
     },
     {
       path: "/",
@@ -17,7 +20,10 @@ function App() {
 
   return (
     <>
-      <RouterProvider router={router} />
+      <QueryClientProvider client={queryClient}>
+        <Toaster position="top-right" />
+        <RouterProvider router={router} />
+      </QueryClientProvider>
     </>
   );
 }
