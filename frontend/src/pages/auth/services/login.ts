@@ -1,4 +1,5 @@
-import { axiosInstance } from "@/util/api/axiosInstance";
+import { axiosInstance, type ApiResponse } from "@/util/api/axiosInstance";
+import type { LoginData } from "../types/auth.types";
 
 export const login = async ({
   email,
@@ -6,7 +7,10 @@ export const login = async ({
 }: {
   email: string;
   password: string;
-}) => {
-  const res = await axiosInstance.post("/auth/login", { email, password });
-  return res;
+}): Promise<ApiResponse<LoginData>> => {
+  const res = await axiosInstance.post<ApiResponse<LoginData>>("/auth/login", {
+    email,
+    password,
+  });
+  return res.data;
 };

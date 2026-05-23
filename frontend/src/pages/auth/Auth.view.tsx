@@ -13,11 +13,11 @@ export interface AuthviewProps {
 
 export const AuthView = (items: AuthviewProps) => {
   return (
-    <section className="min-h-screen w-full mx-auto grid lg:grid-cols-2 grid-cols-1">
+    <section className="min-h-screen w-full mx-auto grid lg:grid-cols-[55%_auto] grid-cols-1">
       <div className="bg-primary/8">
         <AuthContentSection items={items} />
       </div>
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-white mx-4">
         <AuthForm />
       </div>
     </section>

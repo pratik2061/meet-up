@@ -33,7 +33,7 @@ export const AuthContentSection = ({ items }: { items: AuthviewProps }) => {
             ))}
           </ul>
           <div className=" hidden lg:flex lg:items-center lg:justify-center ">
-            <div className="w-130">
+            <div className="w-140">
               <img src={LaptopImage} alt="Laptop" />
             </div>
           </div>
