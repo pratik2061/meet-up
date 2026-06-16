@@ -3,18 +3,28 @@ import RootLayout from "./components/layout/RootLayout";
 import { AuthContainer } from "./pages/auth/Auth.container";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
+import { NotFound } from "./components/not-found";
+import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
 
 function App() {
   const queryClient = new QueryClient();
   const router = createBrowserRouter([
     {
+      path: "/*",
+      element: <NotFound />,
+    },
+    {
       path: "/login",
       element: <AuthContainer />,
     },
     {
-      path: "/",
       element: <RootLayout />,
-      children: [],
+      children: [
+        {
+          path: "/dashboard",
+          element: <DashboardContainer />,
+        },
+      ],
     },
   ]);
 

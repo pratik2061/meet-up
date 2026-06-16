@@ -14,7 +14,7 @@ import { useLocation } from "react-router-dom";
 const navItems = [
   {
     name: "Home",
-    href: "/",
+    href: "/dashboard",
     icon: Home,
   },
   {

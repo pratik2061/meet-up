@@ -3,7 +3,11 @@ import { LoginSchema, type LoginInputSchema } from "../validation/Auth.schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Eye, EyeClosed } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { FaGithub } from "react-icons/fa";
+import { CgGoogle } from "react-icons/cg";
 
 export const AuthForm = () => {
   const [showPassword, setShowPassword] = React.useState(false);
@@ -11,67 +15,110 @@ export const AuthForm = () => {
   const {
     control,
     handleSubmit,
-    formState: { errors },
   } = useForm<LoginInputSchema>({
     resolver: zodResolver(LoginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
   const onSubmit = (data: LoginInputSchema) => {
     console.log("data", data);
   };
+
   return (
-    <div className="w-full  flex items-center justify-center min-h-screen">
-      <div className=" border border-gray-500/20 text-center py-10 rounded-2xl shadow-sm">
-        <h1 className="md:text-3xl text-xl font-bold mb-2">Welcome Back</h1>
-        <p className="text-lg text-gray-900/80 mb-4">
+    <div className="flex min-h-full w-full items-center justify-center">
+      <div className="w-full max-w-lg rounded-2xl border border-gray-500/20 p-6 text-center shadow-sm sm:max-w-xl sm:p-8 lg:max-w-2xl lg:p-10">
+        <h1 className="mb-2 text-xl font-bold sm:text-2xl md:text-3xl">
+          Welcome Back
+        </h1>
+
+        <p className="mb-8 text-sm text-gray-900/80">
           SignIn to continue to MeetUp
         </p>
-        <div className=" px-8 py-6">
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="px-6 mx-4 space-y-4"
-          >
+
+        <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4">
+          <div className="space-y-4 w-full">
             <Controller
               name="email"
               control={control}
               render={({ field }) => (
-                <input
+                <Input
                   {...field}
+                  className="w-full h-12 px-4 text-sm border rounded-md"
                   type="email"
-                  className="w-full px-4 py-4 text-lg border rounded-md"
-                  placeholder="Email address"
+                  placeholder="Email"
                   required
                 />
               )}
             />
+
             <Controller
               name="password"
               control={control}
               render={({ field }) => (
-                <input
-                  {...field}
-                  type={showPassword ? "text" : "password"}
-                  className="w-full px-4 py-4 text-lg border rounded-md"
-                  placeholder="Password"
-                  required
-                />
+                <div className="relative w-full">
+                  <Input
+                    {...field}
+                    className="w-full h-12 px-4 pr-12 text-sm border rounded-md"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 hover:cursor-pointer"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <Eye size={18} /> : <EyeClosed size={18} />}
+                  </button>
+                </div>
               )}
             />
-            <div className="text-end">
-              <span className="text-md text-blue-500 hover:underline hover:cursor-pointer">
-                Forgot password?
-              </span>
-            </div>
-            <div className="">
-              <Button
-                type="submit"
-                className="w-full text-lg font-semibold  py-6 bg-primary/80 hover:cursor-pointer hover:bg-primary"
-              >
-                Submit
-              </Button>
-            </div>
-          </form>
+          </div>
+
+          <div className="text-right">
+            <span className="text-sm text-blue-500 hover:text-primary hover:underline hover:cursor-pointer">
+              Forgot password?
+            </span>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full h-12 text-base font-semibold bg-primary/80 hover:cursor-pointer hover:bg-primary"
+          >
+            Submit
+          </Button>
+        </form>
+        <div className="pt-4 text-right">
+          <span className="text-sm text-blue-500 hover:cursor-pointer hover:text-primary hover:underline">
+            Don't have an account?
+          </span>
+        </div>
+        <div className="relative py-4">
           <Separator />
+          <label className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-background text-sm text-muted-foreground">
+            or continue with
+          </label>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Button
+            variant="outline"
+            className="h-12 w-full flex items-center justify-center gap-2 hover:cursor-pointer"
+          >
+            <CgGoogle />
+            Google
+          </Button>
+
+          <Button
+            variant="outline"
+            className="h-12 w-full flex items-center justify-center gap-2 hover:cursor-pointer"
+          >
+            <FaGithub className="w-5 h-5" />
+            GitHub
+          </Button>
         </div>
       </div>
     </div>

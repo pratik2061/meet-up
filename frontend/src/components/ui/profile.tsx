@@ -6,6 +6,8 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 
+import DefaultProfileImage from "@/assets/default_profile.webp";
+
 interface ProfileProps {
   name: string;
   href: string;
@@ -21,11 +23,8 @@ export const Profile = ({ data }: { data: ProfileProps[] }) => {
           asChild
           className="rounded-full overflow-hidden border text-xl mr-5 hover:cursor-pointer"
         >
-          <button className="w-12 h-12 flex items-center overflow-hidden">
-            <img
-              src="https://imgs.search.brave.com/79URd9v5BJ3THe0zDwW1wKW3Yy1qSslghSVGLQH2Mgs/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0/aWMudmVjdGVlenku/Y29tL3N5c3RlbS9y/ZXNvdXJjZXMvdGh1/bWJuYWlscy8wNDkv/NjcwLzg5NS9zbWFs/bC9hLXBlcnNvbi1z/LXByb2ZpbGUtaWNv/bi1pbi1hLWNpcmNs/ZS1mcmVlLXBuZy5w/bmc"
-              alt=""
-            />
+          <button className="w-10 h-10 flex items-center overflow-hidden">
+            <img src={DefaultProfileImage} alt="default image" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="mr-4 w-40">
