@@ -24,6 +24,10 @@ function App() {
           path: "/dashboard",
           element: <DashboardContainer />,
         },
+        {
+          path:'/meeting',
+          element: <div>Meeting</div>
+        }
       ],
     },
   ]);

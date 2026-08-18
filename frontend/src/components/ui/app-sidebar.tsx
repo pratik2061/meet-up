@@ -42,11 +42,10 @@ export function AppSidebar() {
       className=" text-[#1f2937] border-r border-[#e2e8e4]"
     >
       <SidebarHeader>
-        <div className="flex items-center justify-between w-full mb-4 mt-2 relative">
+        <div className="flex items-center justify-between w-full mb-4 mt-2 ">
           <span className="bg-card text-3xl font-semibold text-primary group-data-[collapsible='icon']:hidden">
             MeetUp
           </span>
-          <SidebarTrigger className="font-bold absolute -right-12 bg-primary/10 top-0 p-4" />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -75,6 +74,9 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <div className="flex justify-end px-4 py-2">
+        <SidebarTrigger className="font-bold   bg-primary/10 " />
+      </div>
     </Sidebar>
   );
 }
