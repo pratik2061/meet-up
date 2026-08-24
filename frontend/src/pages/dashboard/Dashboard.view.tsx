@@ -32,9 +32,9 @@ export const DashboardView = () => {
     },
   ];
   return (
-    <section>
+    <section className="lg:px-6 px-4  lg:py-4 py-2 space-y-2 md:space-y-4 lg:space-y-6">
       {/* sats card div */}
-      <div className="w-full p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
         {dummyStatsData.map((v) => (
           <StatsCard
             key={v.value}

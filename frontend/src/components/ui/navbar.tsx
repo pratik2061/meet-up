@@ -18,7 +18,7 @@ const Navbar = () => {
     },
   ];
   return (
-    <div className="w-full mx-auto border-b shadow-xs">
+    <div className="sticky top-0 z-50 w-full border-b bg-background shadow-xs">
       <div className="flex w-full items-center justify-end  p-2 ">
         <Notification />
 

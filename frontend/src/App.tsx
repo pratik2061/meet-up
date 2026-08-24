@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 import { NotFound } from "./components/not-found";
 import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
+import MeetingContainer from "./pages/meeting/Meeting.container";
+import Reportcontainer from "./pages/report/Report.container";
+import Historycontainer from "./pages/history/History.container";
 
 function App() {
   const queryClient = new QueryClient();
@@ -25,9 +28,17 @@ function App() {
           element: <DashboardContainer />,
         },
         {
-          path:'/meeting',
-          element: <div>Meeting</div>
-        }
+          path: "/meeting",
+          element: <MeetingContainer />,
+        },
+        {
+          path: "/report",
+          element: <Reportcontainer />,
+        },
+        {
+          path: "/history",
+          element: <Historycontainer />,
+        },
       ],
     },
   ]);

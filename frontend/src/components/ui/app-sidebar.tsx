@@ -9,7 +9,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { FileChartColumn, History, Home, TvMinimal } from "lucide-react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
   {
@@ -59,15 +59,15 @@ export function AppSidebar() {
                   className="py-6 data-[active=true]:text-primary data-[active=true]:font-bold"
                   isActive={location.pathname === item.href}
                 >
-                  <a
-                    href={item.href}
+                  <Link
+                    to={item.href}
                     className="flex  items-center justify-start  group-data-[collapsible=icon]:justify-center w-full px-4  group-data-[collapsible=icon]:px-0"
                   >
                     <item.icon className="size-7 min-w-7 text-primary transition-transform group-hover:scale-110" />
                     <span className="ml-4 text-xl font-normal text-inherit group-data-[collapsible=icon]:hidden whitespace-nowrap">
                       {item.name}
                     </span>
-                  </a>
+                  </Link>
                 </SidebarMenuButton>
               ))}
             </SidebarMenu>
