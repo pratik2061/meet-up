@@ -8,7 +8,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { FileChartColumn, History, Home, TvMinimal } from "lucide-react";
+import { FileChartColumn, Home, TvMinimal } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 const navItems = [
@@ -27,11 +27,11 @@ const navItems = [
     href: "/report",
     icon: FileChartColumn,
   },
-  {
-    name: "History",
-    href: "/history",
-    icon: History,
-  },
+  // {
+  //   name: "History",
+  //   href: "/history",
+  //   icon: History,
+  // },
 ];
 
 export function AppSidebar() {

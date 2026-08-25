@@ -7,7 +7,7 @@ import { NotFound } from "./components/not-found";
 import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
 import MeetingContainer from "./pages/meeting/Meeting.container";
 import Reportcontainer from "./pages/report/Report.container";
-import Historycontainer from "./pages/history/History.container";
+// import Historycontainer from "./pages/history/History.container";
 
 function App() {
   const queryClient = new QueryClient();
@@ -35,10 +35,10 @@ function App() {
           path: "/report",
           element: <Reportcontainer />,
         },
-        {
-          path: "/history",
-          element: <Historycontainer />,
-        },
+        // {
+        //   path: "/history",
+        //   element: <Historycontainer />,
+        // },
       ],
     },
   ]);
