@@ -1,21 +1,19 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { JwtModule } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { TokenGenerate } from 'src/utils/token.generate';
-import { verifyToken } from 'src/utils/verify.token';
+import { MongooseModule } from '@nestjs/mongoose';
+import { UserSchema } from 'src/schemas/user.schema';
 
 @Module({
   imports: [
-    JwtModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        // secret: config.get<string>('JWT_SECRET'),
-      }),
-    }),
+    MongooseModule.forFeature([
+      {
+        name: 'User',
+        schema: UserSchema,
+      },
+    ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, TokenGenerate, verifyToken],
+  providers: [AuthService],
 })
 export class AuthModule {}
