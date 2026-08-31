@@ -28,6 +28,9 @@ export class User extends Document {
 
   @Prop()
   refreshToken?: string;
+
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
