@@ -2,9 +2,12 @@ import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UserSchema } from 'src/schemas/user.schema';
+import { User, UserSchema } from 'src/schemas/user.schema';
 import { ConfigModule } from '@nestjs/config';
 import { JwtStrategy } from 'src/strategy/jwt.strategy';
+import { TokenGenerate } from 'src/utils/token-generate';
+import { VerifyToken } from 'src/utils/verify-token';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -17,6 +20,6 @@ import { JwtStrategy } from 'src/strategy/jwt.strategy';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, TokenGenerate, VerifyToken, JwtService],
 })
 export class AuthModule {}
