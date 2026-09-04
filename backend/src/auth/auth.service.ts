@@ -136,7 +136,6 @@ export class AuthService {
   async refresh(refreshToken: string) {
     try {
       const verifyToken = await this.verify.verifyToken(refreshToken);
-      console.log(verifyToken);
       if (!verifyToken) {
         throw new UnauthorizedException(
           'No any response from token verification or invalid token',

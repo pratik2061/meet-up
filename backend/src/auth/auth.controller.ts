@@ -64,7 +64,7 @@ export class AuthController {
     const refreshToken = req.cookies['refreshToken'] as string;
 
     if (!refreshToken) {
-      throw new UnauthorizedException('refresh token missing,please login');
+      throw new BadRequestException('refresh token missing,please login');
     }
     const convertURIToken = decodeURIComponent(refreshToken);
 
