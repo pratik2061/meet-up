@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
+import { WebrtcModule } from './webrtc/webrtc.module';
+import { MeetingModule } from './meeting/meeting.module';
 
 @Module({
   imports: [
@@ -21,6 +23,10 @@ import { AuthModule } from './auth/auth.module';
     }),
 
     AuthModule,
+
+    WebrtcModule,
+
+    MeetingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
