@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { randomUUID } from 'crypto';
 import { User } from './user.schema';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 
 export enum MeetingType {
   CASUALMEETING = 'casualMeeting',
@@ -34,7 +34,7 @@ export class Meeting extends Document {
     ref: 'User',
     required: true,
   })
-  host!: User;
+  host!: User | Types.ObjectId | string;
 
   @Prop([
     {
@@ -42,7 +42,7 @@ export class Meeting extends Document {
       ref: 'User',
     },
   ])
-  participants!: User[];
+  participants!: (User | Types.ObjectId | string)[];
 
   @Prop({
     type: String,
@@ -60,7 +60,12 @@ export class Meeting extends Document {
 
   @Prop({
     type: Date,
-    default: Date.now(),
+    default: null,
+  })
+  scheduledAt!: Date;
+
+  @Prop({
+    type: Date,
   })
   startedAt!: Date;
 
