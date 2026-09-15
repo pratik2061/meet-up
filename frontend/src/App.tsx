@@ -7,6 +7,7 @@ import { NotFound } from "./components/not-found";
 import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
 import MeetingContainer from "./pages/meeting/Meeting.container";
 import Reportcontainer from "./pages/report/Report.container";
+import MeetingPreview from "./components/MeetingPreview";
 // import Historycontainer from "./pages/history/History.container";
 
 function App() {
@@ -30,6 +31,10 @@ function App() {
         {
           path: "/meeting",
           element: <MeetingContainer />,
+        },
+        {
+          path: "/meeting/new",
+          element: <MeetingPreview />,
         },
         {
           path: "/report",

@@ -6,7 +6,7 @@ function MeetingView() {
   return (
     <div className="bg-white text-gray-900 font-sans p-6  flex flex-col justify-center items-center">
       {/* Main Layout Container - Uses Grid for the two columns */}
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
         {/* ==========================================
             LEFT COLUMN: Quick Actions (Start / Join)
             ========================================== */}
