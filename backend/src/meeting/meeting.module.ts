@@ -20,5 +20,6 @@ import { MeetingSchema } from 'src/schemas/meeting.schema';
   ],
   controllers: [MeetingController],
   providers: [MeetingService],
+  exports: [MeetingService],
 })
 export class MeetingModule {}
