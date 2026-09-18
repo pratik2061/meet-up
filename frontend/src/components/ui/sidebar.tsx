@@ -22,7 +22,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { GoSidebarCollapse } from "react-icons/go";
+import { RiMenuUnfold3Line } from "react-icons/ri";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -255,7 +255,9 @@ function SidebarTrigger({
   onClick,
   ...props
 }: React.ComponentProps<typeof Button>) {
-  const { toggleSidebar } = useSidebar();
+  const { toggleSidebar, isMobile, open, openMobile } = useSidebar();
+
+  const isSidebarOpen = isMobile ? openMobile : open;
 
   return (
     <Button
@@ -271,7 +273,9 @@ function SidebarTrigger({
       {...props}
     >
       {/* <PanelLeftIcon /> */}
-      <GoSidebarCollapse className="size-7" />
+      <RiMenuUnfold3Line
+        className={`size-7  ${isSidebarOpen ? "rotate-180" : ""}`}
+      />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );

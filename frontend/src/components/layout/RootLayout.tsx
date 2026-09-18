@@ -6,7 +6,7 @@ import { Navbar } from "../ui/navbar";
 const RootLayout = () => {
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full overflow-hidden">
+      <div className="flex h-svh w-full overflow-hidden">
         <AppSidebar />
 
         <main className="flex min-w-0 flex-1 flex-col min-h-0">
@@ -14,7 +14,7 @@ const RootLayout = () => {
           <Navbar />
 
           {/* Page Content */}
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <Outlet />
           </div>
         </main>

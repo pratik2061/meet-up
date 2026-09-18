@@ -1,6 +1,7 @@
 import { FiVideo } from "react-icons/fi";
 import MeetingScheduleCalender from "./components/MeetingScheduleCalender";
 import { FaLink } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 function MeetingView() {
   return (
@@ -26,10 +27,13 @@ function MeetingView() {
           {/* Slot for your Quick Action Components */}
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
             {/* Replace with your "Start New Meeting" Component */}
-            <button className="w-full sm:w-auto px-4 py-3 bg-primary/80 hover:bg-primary text-white font-medium rounded-md hover:cursor-pointer transition-colors flex items-center justify-center gap-2">
-            <FiVideo className="w-5 h-5" />
+            <Link
+              to={"/meeting/new"}
+              className="w-full sm:w-auto px-4 py-3 bg-primary/80 hover:bg-primary text-white font-medium rounded-md hover:cursor-pointer transition-colors flex items-center justify-center gap-2"
+            >
+              <FiVideo className="w-5 h-5" />
               New Meeting
-            </button>
+            </Link>
 
             {/* Replace with your "Join Meeting" Component */}
             <div className="flex w-full sm:w-auto items-center border border-gray-300 rounded-md px-2 py-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
@@ -61,7 +65,7 @@ function MeetingView() {
               Pick a date and time to generate a future meeting link.
             </p>
             <div className="bg-gray-50  border-gray-300 rounded-lg   text-gray-400 mb-6">
-            <MeetingScheduleCalender />
+              <MeetingScheduleCalender />
             </div>
 
             {/* Replace with your Schedule Action Component */}

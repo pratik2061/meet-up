@@ -1,6 +1,7 @@
 import { LogOut, User } from "lucide-react";
 import { Notification } from "./notification";
 import { Profile } from "./profile";
+import { SidebarTrigger } from "./sidebar";
 
 const Navbar = () => {
   const NavItem = [
@@ -19,11 +20,13 @@ const Navbar = () => {
   ];
   return (
     <div className="sticky top-0 z-50 w-full border-b bg-background shadow-xs">
-      <div className="flex w-full items-center justify-end  p-2 ">
-        <Notification />
+      <div className="flex w-full items-center justify-between md:justify-end p-2">
+        <SidebarTrigger className="md:hidden" />
 
-        {/* dropdown menu for profile and logout and other persoal settings */}
-        <Profile data={NavItem} />
+        <div className="flex items-center ">
+          <Notification />
+          <Profile data={NavItem} />
+        </div>
       </div>
     </div>
   );
