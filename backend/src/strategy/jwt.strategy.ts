@@ -6,7 +6,7 @@ import type { Request } from 'express';
 import { TokenPayLoad } from 'src/types/tokenPayload';
 
 function fromCookies(req: Request): string | null {
-  const token = req?.cookies?.['token'] as undefined;
+  const token = req?.cookies?.['accessToken'] as string | null;
   return token || null;
 }
 

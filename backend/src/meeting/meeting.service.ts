@@ -38,7 +38,7 @@ export class MeetingService {
       }
       const meeting = await this.MeetingModel.findOne({
         roomId,
-      });
+      }).populate('host');
       if (!meeting) {
         throw new NotFoundException('Meeting not found');
       }
