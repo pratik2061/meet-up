@@ -8,14 +8,23 @@ import { Eye, EyeClosed } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { FaGithub } from "react-icons/fa";
 import { CgGoogle } from "react-icons/cg";
+import type { ApiResponse } from "@/util/api/axiosInstance";
+import type { LoginData } from "../types/auth.types";
+import type { LoginRequestPayload } from "../Auth.view";
+import { Spinner } from "@/components/ui/spinner";
 
-export const AuthForm = () => {
+export const AuthForm = ({
+  loginData,
+  isPending,
+  loginMutate,
+}: {
+  loginData: ApiResponse<LoginData> | undefined;
+  isPending: boolean;
+  loginMutate: (data: LoginRequestPayload) => void;
+}) => {
   const [showPassword, setShowPassword] = React.useState(false);
 
-  const {
-    control,
-    handleSubmit,
-  } = useForm<LoginInputSchema>({
+  const { control, handleSubmit } = useForm<LoginInputSchema>({
     resolver: zodResolver(LoginSchema),
     defaultValues: {
       email: "",
@@ -24,7 +33,11 @@ export const AuthForm = () => {
   });
 
   const onSubmit = (data: LoginInputSchema) => {
-    console.log("data", data);
+    loginMutate({
+      email: data.email,
+      password: data.password,
+    });
+    console.log("login data is =", loginData);
   };
 
   return (
@@ -43,37 +56,56 @@ export const AuthForm = () => {
             <Controller
               name="email"
               control={control}
-              render={({ field }) => (
-                <Input
-                  {...field}
-                  className="w-full h-12 px-4 text-sm border rounded-md"
-                  type="email"
-                  placeholder="Email"
-                  required
-                />
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col items-start w-full">
+                  <Input
+                    {...field}
+                    className={`w-full h-12 px-4 text-sm border rounded-md ${
+                      fieldState.error ? "border-red-500" : ""
+                    }`}
+                    type="email"
+                    placeholder="Email"
+                  />
+                  {fieldState.error && (
+                    <span className="mt-1 text-xs text-red-500">
+                      {fieldState.error.message}
+                    </span>
+                  )}
+                </div>
               )}
             />
 
             <Controller
               name="password"
               control={control}
-              render={({ field }) => (
-                <div className="relative w-full">
-                  <Input
-                    {...field}
-                    className="w-full h-12 px-4 pr-12 text-sm border rounded-md"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    required
-                  />
-
-                  <button
-                    type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 hover:cursor-pointer"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <Eye size={18} /> : <EyeClosed size={18} />}
-                  </button>
+              render={({ field, fieldState }) => (
+                <div className="flex flex-col items-start w-full">
+                  <div className="relative w-full">
+                    <Input
+                      {...field}
+                      className={`w-full h-12 px-4 pr-12 text-sm border rounded-md ${
+                        fieldState.error ? "border-red-500" : ""
+                      }`}
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 hover:cursor-pointer text-gray-500"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <Eye size={18} />
+                      ) : (
+                        <EyeClosed size={18} />
+                      )}
+                    </button>
+                  </div>
+                  {fieldState.error && (
+                    <span className="mt-1 text-xs text-red-500">
+                      {fieldState.error.message}
+                    </span>
+                  )}
                 </div>
               )}
             />
@@ -89,7 +121,7 @@ export const AuthForm = () => {
             type="submit"
             className="w-full h-12 text-base font-semibold bg-primary/80 hover:cursor-pointer hover:bg-primary"
           >
-            Submit
+            {isPending ? <Spinner /> : "Sign In"}
           </Button>
         </form>
         <div className="pt-4 text-right">

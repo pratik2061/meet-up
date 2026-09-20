@@ -4,7 +4,7 @@ import { CgCalendarDates } from "react-icons/cg";
 import { HiUsers } from "react-icons/hi2";
 
 import { AuthView } from "./Auth.view";
-// import { useAuthLogin } from "@/util/api/api-hooks/use-auth";
+import { useAuthLogin } from "@/util/api/api-hooks/use-auth";
 
 export const AuthContainer = () => {
   const items = [
@@ -34,6 +34,13 @@ export const AuthContainer = () => {
     },
   ];
 
-  // const { data, isPending } = useAuthLogin();
-  return <AuthView items={items} />;
+  const { data, isPending, mutate } = useAuthLogin();
+  return (
+    <AuthView
+      items={items}
+      loginData={data}
+      isPending={isPending}
+      loginMutate={mutate}
+    />
+  );
 };
