@@ -138,4 +138,32 @@ export class AuthController {
       message: 'Access token refreshed successfully',
     };
   }
+
+  @Get('me')
+  async getMe(@Req() req: Request) {
+    const accessToken = req.cookies['accessToken'] as string;
+    if (!accessToken) {
+      throw new UnauthorizedException(
+        'Access token is missing,Please login again',
+      );
+    }
+    const convertURIToken = decodeURIComponent(accessToken);
+    const userPayload:
+      | {
+          isMatch: boolean;
+          userId: string;
+        }
+      | undefined = await this.verify.verifyToken(convertURIToken);
+
+    if (!userPayload || !userPayload.isMatch || !userPayload.userId) {
+      throw new BadRequestException('failed to verify token');
+    }
+    if (userPayload.isMatch) {
+      const user = await this.authService.getMe(userPayload.userId);
+      return {
+        message: 'Your profile information retrieved successfully',
+        user,
+      };
+    }
+  }
 }

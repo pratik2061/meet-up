@@ -26,7 +26,9 @@ export class User extends Document {
   @Prop({ type: String, enum: UserRole, default: UserRole.USER })
   role!: UserRole;
 
-  @Prop()
+  @Prop({
+    select: false,
+  })
   refreshToken?: string;
 
   createdAt!: Date;

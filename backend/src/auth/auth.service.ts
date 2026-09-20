@@ -173,4 +173,21 @@ export class AuthService {
       );
     }
   }
+
+  async getMe(userId: string) {
+    try {
+      const userDetail = await this.UserModel.findById(userId);
+      if (!userDetail) {
+        throw new NotFoundException('User not found');
+      }
+      return userDetail;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while fetching user data',
+      );
+    }
+  }
 }
