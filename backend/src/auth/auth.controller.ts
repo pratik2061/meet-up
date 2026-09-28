@@ -148,22 +148,13 @@ export class AuthController {
       );
     }
     const convertURIToken = decodeURIComponent(accessToken);
-    const userPayload:
-      | {
-          isMatch: boolean;
-          userId: string;
-        }
-      | undefined = await this.verify.verifyToken(convertURIToken);
-
-    if (!userPayload || !userPayload.isMatch || !userPayload.userId) {
-      throw new BadRequestException('failed to verify token');
+    const response = await this.authService.getMe(convertURIToken);
+    if (!response) {
+      throw new BadRequestException('Failed to fetch user details');
     }
-    if (userPayload.isMatch) {
-      const user = await this.authService.getMe(userPayload.userId);
-      return {
-        message: 'Your profile information retrieved successfully',
-        user,
-      };
-    }
+    return {
+      message: 'User details fetched successfully',
+      data: response,
+    };
   }
 }

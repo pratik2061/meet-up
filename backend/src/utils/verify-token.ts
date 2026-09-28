@@ -26,7 +26,9 @@ export class VerifyToken {
       const decode: TokenPayLoad = this.jwtService.verify(token, {
         secret: this.configService.get<string>('REFRESH_SECRET'),
       });
-      const getUser = await this.UserModel.findById(decode.id);
+      const getUser = await this.UserModel.findById(decode.id).select(
+        '+refreshToken',
+      );
 
       if (!getUser) {
         throw new NotFoundException('User not found');

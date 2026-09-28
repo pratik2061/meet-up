@@ -14,6 +14,8 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { TokenPayLoad } from 'src/types/tokenPayload';
 import { TokenGenerate } from 'src/utils/token-generate';
 import { VerifyToken } from 'src/utils/verify-token';
+import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +23,8 @@ export class AuthService {
     @InjectModel('User') private readonly UserModel: Model<User>,
     private readonly token: TokenGenerate,
     private readonly verify: VerifyToken,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(createAuthDto: CreateAuthDto): Promise<{
@@ -174,15 +178,24 @@ export class AuthService {
     }
   }
 
-  async getMe(userId: string) {
+  async getMe(token: string) {
     try {
-      const userDetail = await this.UserModel.findById(userId);
+      const verifyAccessToken: TokenPayLoad = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('ACCESS_SECRET'),
+      });
+      if (!verifyAccessToken || !verifyAccessToken.id) {
+        throw new UnauthorizedException('Invalid access token');
+      }
+      const userDetail = await this.UserModel.findById(verifyAccessToken.id);
       if (!userDetail) {
         throw new NotFoundException('User not found');
       }
       return userDetail;
     } catch (error) {
-      if (error instanceof NotFoundException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
