@@ -10,9 +10,10 @@ import DefaultProfileImage from "@/assets/default_profile.webp";
 
 interface ProfileProps {
   name: string;
-  href: string;
+  href?: string;
   icon: React.ElementType;
   color: string | "";
+  function?: () => void;
 }
 
 export const Profile = ({ data }: { data: ProfileProps[] }) => {
@@ -30,7 +31,15 @@ export const Profile = ({ data }: { data: ProfileProps[] }) => {
         <DropdownMenuContent className="mr-4 w-40">
           <DropdownMenuGroup className="">
             {data.map((item) => (
-              <DropdownMenuItem key={item.name} className={`${item.color}`}>
+              <DropdownMenuItem
+                key={item.name}
+                className={`${item.color}`}
+                onClick={(event) =>
+                  item.function
+                    ? (event.preventDefault(), item.function())
+                    : undefined
+                }
+              >
                 {
                   <a
                     href={item.href}

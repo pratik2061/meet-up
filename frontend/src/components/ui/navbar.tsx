@@ -2,8 +2,14 @@ import { LogOut, User } from "lucide-react";
 import { Notification } from "./notification";
 import { Profile } from "./profile";
 import { SidebarTrigger } from "./sidebar";
+import { useAuthLogout } from "@/util/api/api-hooks/use-auth";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Navbar = () => {
+  const { mutate: logout } = useAuthLogout();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const NavItem = [
     {
       name: "Profile",
@@ -13,7 +19,16 @@ const Navbar = () => {
     },
     {
       name: "Logout",
-      href: "/logout",
+      // href: "/logout",
+      function: () =>
+        logout(undefined, {
+          onSuccess: () => {
+            queryClient.removeQueries({
+              queryKey: ["current-user"],
+            });
+            navigate("/login", { replace: true });
+          },
+        }),
       icon: LogOut,
       color: "text-red-500 hover:text-red-400",
     },

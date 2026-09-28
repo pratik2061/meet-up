@@ -3,8 +3,9 @@ import { GiAerialSignal } from "react-icons/gi";
 import { CgCalendarDates } from "react-icons/cg";
 import { HiUsers } from "react-icons/hi2";
 
-import { AuthView } from "./Auth.view";
+import { AuthView, type LoginRequestPayload } from "./Auth.view";
 import { useAuthLogin } from "@/util/api/api-hooks/use-auth";
+import { useNavigate } from "react-router-dom";
 
 export const AuthContainer = () => {
   const items = [
@@ -34,13 +35,15 @@ export const AuthContainer = () => {
     },
   ];
 
-  const { data, isPending, mutate } = useAuthLogin();
-  return (
-    <AuthView
-      items={items}
-      loginData={data}
-      isPending={isPending}
-      loginMutate={mutate}
-    />
-  );
+  const { isPending, mutate } = useAuthLogin();
+  const navigate = useNavigate();
+
+  function handleLogin(data: LoginRequestPayload) {
+    mutate(data, {
+      onSuccess: () => {
+        navigate("/dashboard", { replace: true });
+      },
+    });
+  }
+  return <AuthView items={items} isPending={isPending} loginMutate={handleLogin} />;
 };

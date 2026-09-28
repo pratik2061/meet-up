@@ -25,18 +25,18 @@ function MeetingView() {
           </div>
 
           {/* Slot for your Quick Action Components */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
+          <div className="flex flex-col md:flex-row items-center gap-2 mt-4">
             {/* Replace with your "Start New Meeting" Component */}
             <Link
               to={"/meeting/new"}
-              className="w-full sm:w-auto px-4 py-3 bg-primary/80 hover:bg-primary text-white font-medium rounded-md hover:cursor-pointer transition-colors flex items-center justify-center gap-2"
+              className="w-full px-2 py-3 bg-primary/80 hover:bg-primary text-white font-medium rounded-md hover:cursor-pointer transition-colors flex items-center justify-center gap-2"
             >
               <FiVideo className="w-5 h-5" />
               New Meeting
             </Link>
 
             {/* Replace with your "Join Meeting" Component */}
-            <div className="flex w-full sm:w-auto items-center border border-gray-300 rounded-md px-2 py-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+            <div className="flex w-full items-center border border-gray-300 rounded-md px-2 py-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
               <FaLink className="text-gray-500 mr-2" />
               <input
                 type="text"
@@ -45,7 +45,7 @@ function MeetingView() {
               />
             </div>
 
-            <button className="text-primary border border-primary bg-primary/20 hover:cursor-pointer font-medium px-4 py-3 rounded-md ">
+            <button className="text-primary md:w-auto w-full border border-primary bg-primary/20 hover:cursor-pointer font-medium px-4 py-3 rounded-md hover:bg-primary hover:text-white transition duration-300 ">
               Join
             </button>
           </div>

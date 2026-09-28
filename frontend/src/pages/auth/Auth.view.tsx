@@ -1,8 +1,5 @@
-import type { ApiResponse } from "@/util/api/axiosInstance";
 import { AuthContentSection } from "./components/AuthContentSection";
 import { AuthForm } from "./components/AuthForm";
-import type { LoginData } from "./types/auth.types";
-
 export interface items {
   title: string;
   description: string;
@@ -15,7 +12,6 @@ export interface LoginRequestPayload {
 }
 export interface AuthviewProps {
   items: items[];
-  loginData: ApiResponse<LoginData> | undefined;
   isPending: boolean;
   loginMutate: (data: LoginRequestPayload) => void;
 }
@@ -27,11 +23,7 @@ export const AuthView = (items: AuthviewProps) => {
         <AuthContentSection items={items} />
       </div>
       <div className="min-w-0 bg-white px-4 py-8 sm:px-6 lg:px-8">
-        <AuthForm
-          loginData={items.loginData}
-          isPending={items.isPending}
-          loginMutate={items.loginMutate}
-        />
+        <AuthForm isPending={items.isPending} loginMutate={items.loginMutate} />
       </div>
     </section>
   );

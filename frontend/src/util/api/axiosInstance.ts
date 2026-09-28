@@ -7,13 +7,34 @@ export const axiosInstance = axios.create({
 
 // error handling
 axiosInstance.interceptors.response.use(
-  function (response) {
-    // Any status code that lie within the range of 2xx cause this function to trigger
-    console.log("Response received:", response);
+  (response) => {
     return response;
   },
-  function (error) {
-    // Any status codes that falls outside the range of 2xx cause this function to trigger
+
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh")
+    ) {
+      originalRequest._retry = true;
+
+      try {
+        await axiosInstance.get("/auth/refresh");
+
+        // Retry the original request after refreshing
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // Refresh token is also invalid or expired
+        if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
+
+        return Promise.reject(refreshError);
+      }
+    }
 
     return Promise.reject(error);
   },
@@ -21,8 +42,16 @@ axiosInstance.interceptors.response.use(
 
 // Generic API response template for Axios
 export interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T[];
+  success?: boolean;
+  message?: string;
+  data?: T;
   statusCode?: number;
+}
+
+export interface UniversalErrorResponse {
+  response: {
+    data: {
+      message: string;
+    };
+  };
 }

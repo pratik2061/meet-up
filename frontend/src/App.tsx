@@ -8,6 +8,7 @@ import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
 import MeetingContainer from "./pages/meeting/Meeting.container";
 import Reportcontainer from "./pages/report/Report.container";
 import MeetingMainPage from "./components/webrtc/components/MeetingMainPage";
+import { ProtectedRoute } from "./util/protectedRoutes";
 // import Historycontainer from "./pages/history/History.container";
 
 function App() {
@@ -22,28 +23,33 @@ function App() {
       element: <AuthContainer />,
     },
     {
-      element: <RootLayout />,
+      element: <ProtectedRoute />,
       children: [
         {
-          path: "/dashboard",
-          element: <DashboardContainer />,
+          element: <RootLayout />,
+          children: [
+            {
+              path: "/dashboard",
+              element: <DashboardContainer />,
+            },
+            {
+              path: "/meeting",
+              element: <MeetingContainer />,
+            },
+            {
+              path: "/meeting/new",
+              element: <MeetingMainPage />,
+            },
+            {
+              path: "/report",
+              element: <Reportcontainer />,
+            },
+            // {
+            //   path: "/history",
+            //   element: <Historycontainer />,
+            // },
+          ],
         },
-        {
-          path: "/meeting",
-          element: <MeetingContainer />,
-        },
-        {
-          path: "/meeting/new",
-          element: <MeetingMainPage />,
-        },
-        {
-          path: "/report",
-          element: <Reportcontainer />,
-        },
-        // {
-        //   path: "/history",
-        //   element: <Historycontainer />,
-        // },
       ],
     },
   ]);

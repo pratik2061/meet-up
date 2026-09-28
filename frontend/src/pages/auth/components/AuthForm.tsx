@@ -8,17 +8,13 @@ import { Eye, EyeClosed } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { FaGithub } from "react-icons/fa";
 import { CgGoogle } from "react-icons/cg";
-import type { ApiResponse } from "@/util/api/axiosInstance";
-import type { LoginData } from "../types/auth.types";
 import type { LoginRequestPayload } from "../Auth.view";
 import { Spinner } from "@/components/ui/spinner";
 
 export const AuthForm = ({
-  loginData,
   isPending,
   loginMutate,
 }: {
-  loginData: ApiResponse<LoginData> | undefined;
   isPending: boolean;
   loginMutate: (data: LoginRequestPayload) => void;
 }) => {
@@ -37,7 +33,6 @@ export const AuthForm = ({
       email: data.email,
       password: data.password,
     });
-    console.log("login data is =", loginData);
   };
 
   return (
@@ -48,7 +43,7 @@ export const AuthForm = ({
         </h1>
 
         <p className="mb-8 text-sm text-gray-900/80">
-          SignIn to continue to MeetUp
+          SignIn to continue to <span className="text-primary font-semibold">MeetUp</span>
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="w-full space-y-4">

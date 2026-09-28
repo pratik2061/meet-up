@@ -1,5 +1,7 @@
 import { login } from "@/pages/auth/services/login";
+import { logout } from "@/pages/auth/services/logout";
 import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
 import toast from "react-hot-toast";
 
 export const useAuthLogin = () => {
@@ -10,10 +12,28 @@ export const useAuthLogin = () => {
         password,
       }),
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message!);
     },
-    onError: (data) => {
-      toast.error(data.message);
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data.message);
+      }
+    },
+  });
+};
+
+export const useAuthLogout = () => {
+  return useMutation({
+    mutationFn: logout,
+
+    onSuccess: (data) => {
+      toast.success(data.message!);
+    },
+
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data.message);
+      }
     },
   });
 };
