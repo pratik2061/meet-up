@@ -37,6 +37,17 @@ type AppServer = Server<
   AuthenticatedSocketData
 >;
 
+function getCookieValue(cookieHeader: string | undefined, name: string) {
+  if (!cookieHeader) return undefined;
+
+  return cookieHeader
+    .split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith(`${name}=`))
+    ?.split('=')
+    .slice(1)
+    .join('=');
+}
 @WebSocketGateway({
   cors: {
     origin: process.env.FRONTEND_URL,
@@ -58,10 +69,14 @@ export class WebrtcGateway
   afterInit(server: AppServer) {
     server.use((socket: AppSocket, next) => {
       try {
-        const token = socket.handshake.auth.token as string;
-        if (!token) {
+        const rawToken = getCookieValue(
+          socket.handshake.headers.cookie,
+          'accessToken',
+        );
+        if (!rawToken) {
           return next(new UnauthorizedException('No token provided'));
         }
+        const token = decodeURIComponent(rawToken);
         const userPayload: TokenPayLoad = this.jwtService.verify(token, {
           secret: this.configService.get<string>('ACCESS_SECRET'),
         });

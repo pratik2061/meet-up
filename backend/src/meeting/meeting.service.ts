@@ -18,17 +18,33 @@ export class MeetingService {
     @InjectModel('User') private readonly UserModel: Model<User>,
   ) {}
   async createMeeting(createMeetingDto: CreateMeetingDto, userId: string) {
-    const meeting = await this.MeetingModel.create({
-      host: userId,
-      ...createMeetingDto,
-    });
-    if (!meeting) {
-      throw new BadRequestException('Failed to create meeting');
+    try {
+      const checkUser = await this.UserModel.findById(userId);
+      if (!checkUser) {
+        throw new NotFoundException('User not found');
+      }
+      const meeting = await this.MeetingModel.create({
+        host: userId,
+        ...createMeetingDto,
+      });
+      if (!meeting) {
+        throw new BadRequestException('Failed to create meeting');
+      }
+      return {
+        message: 'Meeting created successfully',
+        meetingData: meeting,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while creating the meeting',
+      );
     }
-    return {
-      message: 'Meeting created successfully',
-      meetingData: meeting,
-    };
   }
 
   async getMeeting(roomId: string) {
