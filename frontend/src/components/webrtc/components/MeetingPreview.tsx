@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/field";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 interface handleJoinProps {
   onJoin: (micStatus: boolean, cameraStatus: boolean) => void;
+  isPending: boolean;
 }
-function MeetingPreview({ onJoin }: handleJoinProps) {
+function MeetingPreview({ onJoin, isPending }: handleJoinProps) {
   const webCamRef = useRef<Webcam>(null);
 
   const [isCameraOn, setIsCameraOn] = useState(true);
@@ -133,8 +135,16 @@ function MeetingPreview({ onJoin }: handleJoinProps) {
           <Button
             className="md:text-lg text-md py-6 hover:cursor-pointer bg-primary/80 hover:bg-primary"
             onClick={handleJoinMeeting}
+            disabled={isPending}
           >
-            Start Meeting
+            {isPending ? (
+              <span className="flex items-center justify-center">
+                <Spinner className="mr-2" />
+                starting meeting...
+              </span>
+            ) : (
+              "start meeting"
+            )}
           </Button>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import MeetingRoom from "./MeetingRoom";
 import MeetingPreview from "./MeetingPreview";
+import { useCreateMeeting } from "@/util/api/api-hooks/use-meeting";
 
 export interface MediaConfig {
   isMicOn: boolean;
@@ -12,8 +13,10 @@ function MeetingMainPage() {
     isMicOn: true,
     isCameraOn: true,
   });
+  const { mutateAsync: createMeeting, isPending } = useCreateMeeting();
 
-  function handleJoin(micStatus: boolean, cameraStatus: boolean) {
+  async function handleJoin(micStatus: boolean, cameraStatus: boolean) {
+    await createMeeting();
     setMediaConfig({
       isMicOn: micStatus,
       isCameraOn: cameraStatus,
@@ -32,7 +35,7 @@ function MeetingMainPage() {
       onLeave={handleLeave}
     />
   ) : (
-    <MeetingPreview onJoin={handleJoin} />
+    <MeetingPreview onJoin={handleJoin} isPending={isPending} />
   );
 }
 
