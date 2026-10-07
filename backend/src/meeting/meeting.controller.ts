@@ -37,6 +37,15 @@ export class MeetingController {
     return this.meetingService.getMeeting(roomId);
   }
 
+  @Get(':roomId/validate')
+  validateJoinMeeting(@Param('roomId') roomId: string, @Req() req: Request) {
+    const user = req.user as TokenPayLoad;
+    if (!user || !user.id || !user.email || !user.createdAt) {
+      throw new UnauthorizedException('User not authenticated, please log in');
+    }
+    return this.meetingService.ValidateJoinMeeting(roomId, user.id);
+  }
+
   @Post(':roomId/end')
   @UseGuards(JwtAuthGuard)
   end(@Req() req: Request, @Param('roomId') roomId: string) {

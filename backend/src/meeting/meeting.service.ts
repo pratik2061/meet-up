@@ -16,7 +16,7 @@ export class MeetingService {
   constructor(
     @InjectModel('Meeting') private readonly MeetingModel: Model<Meeting>,
     @InjectModel('User') private readonly UserModel: Model<User>,
-  ) {}
+  ) { }
   async createMeeting(createMeetingDto: CreateMeetingDto, userId: string) {
     try {
       const checkUser = await this.UserModel.findById(userId);
@@ -60,6 +60,7 @@ export class MeetingService {
       }
       return {
         message: 'Meeting fetched successfully',
+        status: true,
         meetingData: meeting,
       };
     } catch (error) {
@@ -71,6 +72,46 @@ export class MeetingService {
       }
       throw new InternalServerErrorException(
         'An error occurred while fetching the meeting data',
+      );
+    }
+  }
+
+  async validateJoinMeeting(roomId: string, userId: string) {
+    try {
+      if (!roomId || !userId) {
+        throw new BadRequestException('Room ID and User ID are required');
+      }
+      const findUser = await this.UserModel.findById(userId);
+
+      if (!findUser) {
+        throw new NotFoundException('User not found');
+      }
+      const findMeeting = await this.MeetingModel.findOne({
+        roomId,
+      });
+      if (!findMeeting) {
+        throw new NotFoundException('Meeting not found');
+      }
+      if (findMeeting.meetingStatus === MeetingStatus.CANCELLED) {
+        throw new ForbiddenException('Meeting has been cancelled');
+      }
+      if (findMeeting.meetingStatus === MeetingStatus.COMPLETED) {
+        throw new ForbiddenException('This meeting has already ended');
+      }
+      return {
+        isValid: true,
+        meetingDetails: findMeeting,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while validating the join meeting request',
       );
     }
   }

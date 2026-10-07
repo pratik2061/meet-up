@@ -107,7 +107,7 @@ export class WebrtcGateway
       'having id = ',
       client.data.user?.id,
     );
-    client.on('disconnect', () => {
+    client.on('disconnecting', () => {
       const user = client.data.user;
       for (const roomId of client.rooms) {
         if (roomId === client.id) {
@@ -313,7 +313,7 @@ export class WebrtcGateway
       throw new WsException('You have not joined this meeting');
     }
 
-    client.to(data.roomId).emit('participant-left', {
+    client.to(data.roomId).emit('user-left', {
       socketId: client.id,
       userId: user?.id,
     });
