@@ -11,8 +11,8 @@ import MeetingMainPage from "./components/webrtc/components/MeetingMainPage";
 import { ProtectedRoute } from "./util/protectedRoutes";
 // import Historycontainer from "./pages/history/History.container";
 
+export const queryClient = new QueryClient();
 function App() {
-  const queryClient = new QueryClient();
   const router = createBrowserRouter([
     {
       path: "/*",
@@ -38,6 +38,10 @@ function App() {
             },
             {
               path: "/meeting/new",
+              element: <MeetingMainPage />,
+            },
+            {
+              path: "/meeting/:roomId",
               element: <MeetingMainPage />,
             },
             {

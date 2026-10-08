@@ -40,6 +40,8 @@ export const useWebRTC = (roomId: string, isMicOn: boolean, isCameraOn: boolean)
     const [localStream, setLocalStream] = useState<MediaStream | null>(null)
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
 
+    const localStreamRef = useRef<MediaStream | null>(null);
+
     const remoteSocketIdRef = useRef<string | null>(null);
 
     useEffect(() => {
@@ -62,6 +64,8 @@ export const useWebRTC = (roomId: string, isMicOn: boolean, isCameraOn: boolean)
                 )
                 stream.getVideoTracks().forEach(track => track.enabled = isCameraOn);
                 stream.getAudioTracks().forEach(track => track.enabled = isMicOn);
+                localStreamRef.current = stream;
+
                 setLocalStream(stream)
 
                 stream.getTracks().forEach((track) => {
@@ -159,9 +163,40 @@ export const useWebRTC = (roomId: string, isMicOn: boolean, isCameraOn: boolean)
             }
         })
 
+        //handling user left condition 
+
+        socketRef.current.on('user-left', () => {
+            setRemoteStream(null)
+            remoteSocketIdRef.current = null
+            if (peerConnectionRef.current) {
+                peerConnectionRef.current.close()
+                peerConnectionRef.current = new RTCPeerConnection(ICE_SERVERS)
+            }
+
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach((track) => {
+                    peerConnectionRef.current?.addTrack(track, localStreamRef.current!)
+                })
+            }
+            peerConnectionRef.current!.onicecandidate = (event) => {
+                if (event.candidate && remoteSocketIdRef.current) {
+                    socketRef.current?.emit('ice-candidate', {
+                        roomId,
+                        targetSocketId: remoteSocketIdRef.current,
+                        candidate: event.candidate
+                    })
+                }
+            }
+            peerConnectionRef.current!.ontrack = (event) => {
+                setRemoteStream(event.streams[0])
+            }
+        })
         //cleanup function to handle socket close , when leave meeting is triggerd
 
         return () => {
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach(track => track.stop());
+            }
             socketRef.current?.disconnect()
             peerConnectionRef.current?.close()
         }

@@ -4,10 +4,10 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { GiVideoConference } from "react-icons/gi";
 import { PiPresentation } from "react-icons/pi";
 import { DashboardStatsChart } from "./components/DashboardStatsChart";
-import DashboardQuickAction  from "./components/DashboardQuickAction";
+import DashboardQuickAction from "./components/DashboardQuickAction";
 import { DashboardRecentTable } from "./components/DashboardRecentTable";
 
-export const DashboardView = () => {
+export const DashboardView = ({  isPending, handleJoinMeeting }: { isPending: boolean, handleJoinMeeting: (id: string) => void }) => {
   const dummyStatsData = [
     {
       title: "Total users",
@@ -57,7 +57,7 @@ export const DashboardView = () => {
             <DashboardStatsChart />
           </div>
         </div>
-        <DashboardQuickAction />
+        <DashboardQuickAction isPending={isPending} handleJoinMeeting={handleJoinMeeting} />
       </div>
 
       {/* Recent logs table */}
