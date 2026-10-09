@@ -44,12 +44,14 @@ export class AuthController {
     res.cookie('accessToken', response.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production' ? true : false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: this.configService.get('ACCESS_EXPIRES_IN') * 1000,
     });
 
     res.cookie('refreshToken', response.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production' ? true : false,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: this.configService.get('REFRESH_EXPIRES_IN') * 1000,
     });
 
@@ -90,6 +92,10 @@ export class AuthController {
           this.configService.get<string>('NODE_ENV') === 'production'
             ? true
             : false,
+        sameSite:
+          this.configService.get<string>('NODE_ENV') === 'production'
+            ? 'none'
+            : 'lax',
       });
       res.clearCookie('refreshToken', {
         httpOnly: true,
@@ -97,6 +103,10 @@ export class AuthController {
           this.configService.get<string>('NODE_ENV') === 'production'
             ? true
             : false,
+        sameSite:
+          this.configService.get<string>('NODE_ENV') === 'production'
+            ? 'none'
+            : 'lax',
       });
       return {
         message: 'Logout successful',
@@ -132,6 +142,10 @@ export class AuthController {
         this.configService.get<string>('NODE_ENV') === 'production'
           ? true
           : false,
+      sameSite:
+        this.configService.get<string>('NODE_ENV') === 'production'
+          ? 'none'
+          : 'lax',
       maxAge: this.configService.get('ACCESS_EXPIRES_IN') * 1000,
     });
     return {
