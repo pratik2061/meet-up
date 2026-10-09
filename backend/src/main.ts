@@ -27,6 +27,6 @@ async function bootstrap() {
   http.get('/api/health', (_req: Request, res: Response) => {
     res.send("server is healthy")
   })
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();
