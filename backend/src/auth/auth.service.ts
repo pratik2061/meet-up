@@ -16,6 +16,8 @@ import { TokenGenerate } from 'src/utils/token-generate';
 import { VerifyToken } from 'src/utils/verify-token';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RedisService } from 'src/redis/redis.service';
+import { RecentLogService } from 'src/recent-log/recent-log.service';
 
 @Injectable()
 export class AuthService {
@@ -25,7 +27,9 @@ export class AuthService {
     private readonly verify: VerifyToken,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly redisService: RedisService,
+    private readonly recentLogService: RecentLogService,
+  ) { }
 
   async create(createAuthDto: CreateAuthDto): Promise<{
     message: string;
@@ -45,6 +49,12 @@ export class AuthService {
         password: hashedPassword,
       });
       const { password: _password, ...userData } = createUser.toObject();
+
+      await this.recentLogService.createLog(
+        createUser.id,
+        'User Signup',
+        'User registered a new account'
+      );
 
       return {
         message: 'User created successfully',
@@ -87,10 +97,20 @@ export class AuthService {
       const { accessToken, refreshToken } =
         this.token.generateToken(userPayload);
 
+      const { password: _password, ...restData } = user.toJSON()
+
       const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
       await this.UserModel.findByIdAndUpdate(user._id, {
         refreshToken: hashedRefreshToken,
       });
+
+      await this.redisService.client.set(`user:${user.id}`, JSON.stringify(restData), 'EX', Number(this.configService.get('REDIS_TTL')!))
+
+      await this.recentLogService.createLog(
+        user.id,
+        'User Login',
+        'User signed into their account'
+      );
 
       return {
         accessToken,
@@ -120,6 +140,12 @@ export class AuthService {
       await this.UserModel.findByIdAndUpdate(userId, {
         refreshToken: null,
       });
+
+      await this.recentLogService.createLog(
+        userId,
+        'User Logout',
+        'User logged out of their account'
+      );
 
       return {
         status: true,
@@ -186,10 +212,22 @@ export class AuthService {
       if (!verifyAccessToken || !verifyAccessToken.id) {
         throw new UnauthorizedException('Invalid access token');
       }
+      const checkRedis = await this.redisService.client.get(
+        `user:${verifyAccessToken.id}`
+      )
+      if (checkRedis) {
+        return JSON.parse(checkRedis)
+      }
       const userDetail = await this.UserModel.findById(verifyAccessToken.id);
       if (!userDetail) {
         throw new NotFoundException('User not found');
       }
+      await this.redisService.client.set(
+        `user:${userDetail.id}`,
+        JSON.stringify(userDetail),
+        'EX',
+        Number(this.configService.get('REDIS_TTL')!)
+      )
       return userDetail;
     } catch (error) {
       if (

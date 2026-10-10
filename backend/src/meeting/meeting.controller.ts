@@ -32,6 +32,16 @@ export class MeetingController {
     return this.meetingService.createMeeting(createMeetingDto, user.id);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  getAllMeetings(@Req() req: Request) {
+    const user = req.user as TokenPayLoad;
+    if (!user || !user.id || !user.email || !user.createdAt) {
+      throw new UnauthorizedException('User not authenticated, please log in');
+    }
+    return this.meetingService.getAllMeetings(user.id);
+  }
+
   @Get(':roomId')
   @UseGuards(JwtAuthGuard)
   getMeeting(@Param('roomId') roomId: string) {

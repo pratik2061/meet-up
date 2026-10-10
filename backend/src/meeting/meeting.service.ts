@@ -10,12 +10,14 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Meeting, MeetingStatus } from 'src/schemas/meeting.schema';
 import { User } from 'src/schemas/user.schema';
+import { RecentLogService } from 'src/recent-log/recent-log.service';
 
 @Injectable()
 export class MeetingService {
   constructor(
     @InjectModel('Meeting') private readonly MeetingModel: Model<Meeting>,
     @InjectModel('User') private readonly UserModel: Model<User>,
+    private readonly recentLogService: RecentLogService,
   ) { }
   async createMeeting(createMeetingDto: CreateMeetingDto, userId: string) {
     try {
@@ -30,6 +32,13 @@ export class MeetingService {
       if (!meeting) {
         throw new BadRequestException('Failed to create meeting');
       }
+      
+      await this.recentLogService.createLog(
+        userId,
+        'Created Meeting',
+        `Created a new meeting with room ID: ${meeting.roomId}`
+      );
+
       return {
         message: 'Meeting created successfully',
         meetingData: meeting,
@@ -143,6 +152,13 @@ export class MeetingService {
       findMeeting.meetingDuration = String(calculteMeetingDuration);
       findMeeting.meetingStatus = MeetingStatus.COMPLETED;
       await findMeeting.save();
+
+      await this.recentLogService.createLog(
+        userId,
+        'Ended Meeting',
+        `Ended the meeting with room ID: ${findMeeting.roomId}`
+      );
+
       return {
         message: 'Meeting ended successfully',
         meetingData: findMeeting,
@@ -230,6 +246,12 @@ export class MeetingService {
         findMeeting.meetingStatus = MeetingStatus.ONGOING;
         await findMeeting.save();
       }
+
+      await this.recentLogService.createLog(
+        userId,
+        'Joined Meeting',
+        `Joined the meeting with room ID: ${findMeeting.roomId}`
+      );
     } catch (error) {
       if (
         error instanceof BadRequestException ||
@@ -239,6 +261,41 @@ export class MeetingService {
       }
       throw new InternalServerErrorException(
         'An error occurred while checking if the user has joined the meeting',
+      );
+    }
+  }
+
+  async getAllMeetings(userId: string) {
+    try {
+      if (!userId) {
+        throw new BadRequestException('User ID is required');
+      }
+      const findUser = await this.UserModel.findById(userId);
+
+      if (!findUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      const meetings = await this.MeetingModel.find({
+        $or: [{ host: userId }, { participants: userId }],
+      })
+        .populate('host', 'fullName email')
+        .sort({ scheduledAt: 1, createdAt: -1 });
+
+      return {
+        message: 'Meetings fetched successfully',
+        status: true,
+        meetingsData: meetings,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while fetching meetings',
       );
     }
   }

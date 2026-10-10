@@ -8,10 +8,12 @@ import { JwtStrategy } from 'src/strategy/jwt.strategy';
 import { TokenGenerate } from 'src/utils/token-generate';
 import { VerifyToken } from 'src/utils/verify-token';
 import { JwtService } from '@nestjs/jwt';
+import { RecentLogModule } from 'src/recent-log/recent-log.module';
 
 @Module({
   imports: [
     ConfigModule,
+    RecentLogModule,
     MongooseModule.forFeature([
       {
         name: 'User',
@@ -22,4 +24,4 @@ import { JwtService } from '@nestjs/jwt';
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, TokenGenerate, VerifyToken, JwtService],
 })
-export class AuthModule {}
+export class AuthModule { }
