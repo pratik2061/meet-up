@@ -3,91 +3,158 @@ import MeetingScheduleCalender from "./components/MeetingScheduleCalender";
 import { FaLink } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
+import type {
+  MeetingDetailsResponse,
+  MeetingPagination,
+  MeetingStatusCounts,
+} from "./types/meeting-types";
+import {
+  MeetingListSection,
+  type FilterTab,
+} from "./components/MeetingListSection";
 
 interface MeetingViewProps {
   meetingCode: string;
   setMeetingCode: (code: string) => void;
-  handleJoin: () => void;
+  handleJoin: (customCode?: string) => void;
   isPending: boolean;
+  meetings?: MeetingDetailsResponse[];
+  pagination?: MeetingPagination;
+  counts?: MeetingStatusCounts;
+  page?: number;
+  limit?: number;
+  searchQuery?: string;
+  activeTab?: FilterTab;
+  onPageChange?: (page: number) => void;
+  onLimitChange?: (limit: number) => void;
+  onSearchChange?: (search: string) => void;
+  onTabChange?: (tab: FilterTab) => void;
+  isLoadingMeetings?: boolean;
+  isFetchingMeetings?: boolean;
+  isMeetingsError?: boolean;
+  currentUserId?: string;
+  onRefreshMeetings?: () => void;
 }
 
 function MeetingView({
   meetingCode,
   setMeetingCode,
   handleJoin,
-  isPending
+  isPending,
+  meetings,
+  pagination,
+  counts,
+  page,
+  limit,
+  searchQuery,
+  activeTab,
+  onPageChange,
+  onLimitChange,
+  onSearchChange,
+  onTabChange,
+  isLoadingMeetings,
+  isFetchingMeetings,
+  isMeetingsError,
+  currentUserId,
+  onRefreshMeetings,
 }: MeetingViewProps) {
   return (
-    <div className="bg-white text-gray-900 font-sans p-6  flex flex-col justify-center items-center">
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <div className="min-h-full bg-background text-foreground font-sans px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col items-center">
+      {/* Top Hero and Schedule Section */}
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
         <div className="flex flex-col space-y-4">
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl font-normal tracking-tight text-gray-800">
+          <div className="space-y-3">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-foreground">
               Premium video meetings.
               <br />
-              Now free for everyone.
+              <span className="text-primary font-medium">Now free for everyone.</span>
             </h1>
-            <p className="text-gray-500 text-lg max-w-md">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-md">
               Connect, collaborate, and celebrate from anywhere with secure
               video meetings.
             </p>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center gap-2 mt-4">
+          <div className="flex flex-col md:flex-row items-center gap-2 mt-2">
             <Link
               to={"/meeting/new"}
-              className="w-full px-2 py-3 bg-primary/80 hover:bg-primary text-white font-medium rounded-md hover:cursor-pointer transition-colors flex items-center justify-center gap-2"
+              className="w-full md:w-auto px-5 py-2.5 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg hover:cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-xs whitespace-nowrap text-sm"
             >
-              <FiVideo className="w-5 h-5" />
+              <FiVideo className="w-4 h-4" />
               New Meeting
             </Link>
 
-            <div className="flex w-full items-center border border-gray-300 rounded-md px-2 py-3 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-              <FaLink className="text-gray-500 mr-2" />
+            <div className="flex w-full items-center border border-border bg-card rounded-lg px-3 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+              <FaLink className="text-muted-foreground mr-2 shrink-0 text-xs" />
               <input
                 type="text"
                 placeholder="Enter a code or link"
                 value={meetingCode}
                 onChange={(e) => setMeetingCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                className="outline-none bg-transparent w-full text-gray-700"
+                onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+                className="outline-none bg-transparent w-full text-foreground text-xs sm:text-sm placeholder:text-muted-foreground"
               />
             </div>
 
             <button
-              onClick={handleJoin}
-              disabled={isPending}
-              className="text-primary md:w-auto w-full border border-primary bg-primary/20 hover:cursor-pointer font-medium px-4 py-3 rounded-md hover:bg-primary hover:text-white transition duration-300 ">
-              {
-                isPending ? (
-                  <Spinner className="size-5" />
-                ) : "Join"
-              }
+              onClick={() => handleJoin()}
+              disabled={isPending || !meetingCode.trim()}
+              className="text-primary md:w-auto w-full border border-primary/40 bg-primary/10 hover:cursor-pointer font-medium px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
+            >
+              {isPending ? <Spinner className="size-4" /> : "Join"}
             </button>
           </div>
 
-          <hr className="border-gray-200 block lg:hidden my-8" />
+          <hr className="border-border block lg:hidden my-4" />
         </div>
+
         <div className="w-full flex justify-center lg:justify-end">
-          <div className="w-full max-w-md bg-white border border-gray-200 shadow-sm rounded-xl p-6 md:p-6">
-            <h2 className="text-2xl font-semibold mb-2 text-gray-800">
-              Schedule a Meeting
-            </h2>
-            <p className="text-sm text-gray-500 mb-6">
-              Pick a date and time to generate a future meeting link.
-            </p>
-            <div className="bg-gray-50  border-gray-300 rounded-lg   text-gray-400 mb-6">
+          <div className="w-full max-w-[420px] bg-card border border-border shadow-xs rounded-2xl p-5 sm:p-6">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                Schedule a Meeting
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Pick a date and time to generate a future meeting link.
+              </p>
+            </div>
+
+            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 mb-4">
               <MeetingScheduleCalender />
             </div>
 
-            <button className="w-full px-6 py-3 bg-primary/80 hover:bg-primary hover:cursor-pointer text-white font-medium rounded-md transition-colors">
-              Schedule Now
+            <button className="w-full py-3 px-4 bg-primary hover:bg-primary/90 hover:cursor-pointer text-white font-medium rounded-xl transition-all text-sm shadow-xs hover:shadow-sm flex items-center justify-center gap-2">
+              <FiVideo className="w-4 h-4" />
+              <span>Schedule Now</span>
             </button>
           </div>
         </div>
       </div>
+
+      {/* Meetings List Section */}
+      <MeetingListSection
+        meetings={meetings}
+        pagination={pagination}
+        counts={counts}
+        page={page}
+        limit={limit}
+        searchQuery={searchQuery}
+        activeTab={activeTab}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+        onSearchChange={onSearchChange}
+        onTabChange={onTabChange}
+        isLoading={isLoadingMeetings}
+        isFetching={isFetchingMeetings}
+        isError={isMeetingsError}
+        currentUserId={currentUserId}
+        onRefresh={onRefreshMeetings}
+        onJoin={(roomId) => handleJoin(roomId)}
+        isJoining={isPending}
+      />
     </div>
   );
 }
 
 export default MeetingView;
+

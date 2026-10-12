@@ -33,7 +33,12 @@ const ICE_SERVERS = {
     ],
 };
 
-export const useWebRTC = (roomId: string, isMicOn: boolean, isCameraOn: boolean) => {
+export const useWebRTC = (
+    roomId: string,
+    isMicOn: boolean,
+    isCameraOn: boolean,
+    onMeetingEnded?: () => void
+) => {
     const socketRef = useRef<Socket | null>(null)
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
 
@@ -191,6 +196,16 @@ export const useWebRTC = (roomId: string, isMicOn: boolean, isCameraOn: boolean)
                 setRemoteStream(event.streams[0])
             }
         })
+
+        //handling meeting ended condition
+        socketRef.current.on('meeting-ended', () => {
+            if (localStreamRef.current) {
+                localStreamRef.current.getTracks().forEach((track) => track.stop());
+            }
+            toast.error('The meeting has been ended by the host');
+            onMeetingEnded?.();
+        });
+
         //cleanup function to handle socket close , when leave meeting is triggerd
 
         return () => {
@@ -202,8 +217,22 @@ export const useWebRTC = (roomId: string, isMicOn: boolean, isCameraOn: boolean)
         }
     }, [roomId])
 
+    const leaveMeeting = () => {
+        if (socketRef.current && roomId) {
+            socketRef.current.emit('leave-meeting', { roomId });
+        }
+    };
+
+    const endMeeting = () => {
+        if (socketRef.current && roomId) {
+            socketRef.current.emit('end-meeting', { roomId });
+        }
+    };
+
     return {
         localStream,
-        remoteStream
+        remoteStream,
+        leaveMeeting,
+        endMeeting
     }
 }

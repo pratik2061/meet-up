@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useWebRTC } from "@/util/hooks/webrtc-hook";
-import { Copy, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { useEndMeeting } from "@/util/api/api-hooks/use-meeting";
+import { Copy, LogOut, Mic, MicOff, PhoneOff, Video, VideoOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
@@ -9,12 +18,21 @@ interface MeetingRoomProps {
   isMicOn: boolean;
   isCameraOn: boolean;
   onLeave: () => void;
-  roomId: string
+  roomId: string;
+  isHost: boolean;
 }
 
-function MeetingRoom({ isMicOn, isCameraOn, onLeave, roomId }: MeetingRoomProps) {
+function MeetingRoom({ isMicOn, isCameraOn, onLeave, roomId, isHost }: MeetingRoomProps) {
+  const { mutateAsync: mutateEndMeeting, isPending: isEndingMeeting } = useEndMeeting();
+  const [isEnding, setIsEnding] = useState(false);
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
 
-  const { localStream, remoteStream } = useWebRTC(roomId, isMicOn, isCameraOn)
+  const { localStream, remoteStream, leaveMeeting, endMeeting: emitEndMeeting } = useWebRTC(
+    roomId,
+    isMicOn,
+    isCameraOn,
+    onLeave
+  );
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -40,6 +58,28 @@ function MeetingRoom({ isMicOn, isCameraOn, onLeave, roomId }: MeetingRoomProps)
         setCameraActive(videoTrack.enabled);
       }
     }
+  };
+
+  const handleEndMeeting = async () => {
+    try {
+      setIsEnding(true);
+      emitEndMeeting();
+      await mutateEndMeeting(roomId);
+      toast.success("Meeting ended successfully");
+      setIsEndDialogOpen(false);
+      onLeave();
+    } catch (error) {
+      console.error("Error ending meeting:", error);
+      onLeave();
+    } finally {
+      setIsEnding(false);
+    }
+  };
+
+  const handleLeaveMeeting = () => {
+    leaveMeeting();
+    toast.success("Left the meeting");
+    onLeave();
   };
 
 
@@ -179,14 +219,60 @@ function MeetingRoom({ isMicOn, isCameraOn, onLeave, roomId }: MeetingRoomProps)
 
             <div className="mx-1 h-8 w-px bg-slate-200" />
 
-            <Button
-              variant="destructive"
-              className="h-12 rounded-xl px-4 sm:px-6"
-              onClick={onLeave}
-            >
-              <span className="hidden sm:inline">Leave</span>
-              <span className="sm:hidden">Leave</span>
-            </Button>
+            {isHost ? (
+              <Dialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="h-12 rounded-xl px-4 sm:px-6 gap-2 font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                  >
+                    <PhoneOff size={18} className="text-white shrink-0" />
+                    <span className="text-white font-medium">End meeting</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>End meeting for everyone?</DialogTitle>
+                    <DialogDescription>
+                      You are the host of this meeting. Ending this meeting will disconnect all participants and mark the meeting as completed.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter className="mt-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEndDialogOpen(false)}
+                      disabled={isEnding || isEndingMeeting}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setIsEndDialogOpen(false);
+                        handleLeaveMeeting();
+                      }}
+                      disabled={isEnding || isEndingMeeting}
+                    >
+                      Leave only
+                    </Button>
+                    <Button
+                      onClick={handleEndMeeting}
+                      disabled={isEnding || isEndingMeeting}
+                      className="bg-red-600 text-white hover:bg-red-700 font-medium"
+                    >
+                      {isEnding || isEndingMeeting ? "Ending meeting..." : "End meeting for all"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            ) : (
+              <Button
+                className="h-12 rounded-xl px-4 sm:px-6 gap-2 font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                onClick={handleLeaveMeeting}
+              >
+                <LogOut size={18} className="text-white shrink-0" />
+                <span className="text-white font-medium">Leave</span>
+              </Button>
+            )}
           </div>
         </div>
       </main>

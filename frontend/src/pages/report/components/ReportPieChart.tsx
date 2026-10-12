@@ -1,7 +1,7 @@
 "use client";
 
-import { TrendingUp } from "lucide-react";
-import { Pie, PieChart } from "recharts";
+import { Pie, PieChart, Cell } from "recharts";
+import { PieChart as PieChartIcon } from "lucide-react";
 
 import {
   Card,
@@ -17,89 +17,156 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import type { MeetingTypeDistributionItem } from "../types/report-types";
 
-export const description = "A pie chart with a custom label";
-
-const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
+const defaultColors = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
 ];
 
-const chartConfig = {
+const fallbackChartConfig: ChartConfig = {
   visitors: {
-    label: "Visitors",
+    label: "Meetings",
   },
-  chrome: {
-    label: "Chrome",
+  casualMeeting: {
+    label: "Casual Meeting",
     color: "var(--chart-1)",
   },
-  safari: {
-    label: "Safari",
+  formalMeeting: {
+    label: "Formal Meeting",
     color: "var(--chart-2)",
   },
-  firefox: {
-    label: "Firefox",
+  studyMeeting: {
+    label: "Study Meeting",
     color: "var(--chart-3)",
   },
-  edge: {
-    label: "Edge",
+  otherMeeting: {
+    label: "Other Meeting",
     color: "var(--chart-4)",
   },
-  other: {
-    label: "Other",
-    color: "var(--chart-5)",
-  },
-} satisfies ChartConfig;
+};
 
-export function ReportPieChart() {
+interface ReportPieChartProps {
+  data?: MeetingTypeDistributionItem[];
+  totalMeetings?: number;
+  description?: string;
+  dateRangeLabel?: string;
+  isLoading?: boolean;
+}
+
+export function ReportPieChart({
+  data = [],
+  totalMeetings = 0,
+  description,
+  dateRangeLabel,
+  isLoading = false,
+}: ReportPieChartProps) {
+  const chartData = data.map((item, index) => ({
+    ...item,
+    fill: item.fill || defaultColors[index % defaultColors.length],
+  }));
+
+  const hasData = totalMeetings > 0 && chartData.some((d) => d.count > 0);
+
   return (
     <Card className="flex flex-col">
-      <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart - Custom Label</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+      <CardHeader className="items-center pb-2">
+        <CardTitle className="text-base font-semibold">
+          Meeting Type Distribution
+        </CardTitle>
+        <CardDescription>
+          {dateRangeLabel || "Overview for selected period"}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px] px-0"
-        >
-          <PieChart>
-            <ChartTooltip
-              content={<ChartTooltipContent nameKey="visitors" hideLabel />}
-            />
-            <Pie
-              data={chartData}
-              dataKey="visitors"
-              labelLine={false}
-              label={({ payload, ...props }) => {
-                return (
-                  <text
-                    cx={props.cx}
-                    cy={props.cy}
-                    x={props.x}
-                    y={props.y}
-                    textAnchor={props.textAnchor}
-                    dominantBaseline={props.dominantBaseline}
-                    fill="var(--foreground)"
-                  >
-                    {payload.visitors}
-                  </text>
-                );
-              }}
-              nameKey="browser"
-            />
-          </PieChart>
-        </ChartContainer>
+      <CardContent className="flex-1 pb-0 flex items-center justify-center min-h-[250px]">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
+            <div className="w-24 h-24 rounded-full border-4 border-muted border-t-primary animate-spin" />
+            <span className="text-xs">Loading distribution...</span>
+          </div>
+        ) : !hasData ? (
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
+            <PieChartIcon className="w-10 h-10 opacity-40 stroke-1" />
+            <p className="text-sm font-medium">No meeting records found</p>
+            <p className="text-xs text-muted-foreground/75">
+              Create meetings to see type distribution
+            </p>
+          </div>
+        ) : (
+          <ChartContainer
+            config={fallbackChartConfig}
+            className="mx-auto aspect-square max-h-[250px] w-full px-0"
+          >
+            <PieChart>
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    nameKey="label"
+                    formatter={(value, name) => (
+                      <div className="flex items-center justify-between gap-4 w-full text-xs">
+                        <span className="text-muted-foreground">{name}:</span>
+                        <span className="font-semibold">{value} meetings</span>
+                      </div>
+                    )}
+                  />
+                }
+              />
+              <Pie
+                data={chartData}
+                dataKey="count"
+                nameKey="label"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                labelLine={false}
+                label={({ payload, ...props }) => {
+                  if (!payload.count) return null;
+                  return (
+                    <text
+                      cx={props.cx}
+                      cy={props.cy}
+                      x={props.x}
+                      y={props.y}
+                      textAnchor={props.textAnchor}
+                      dominantBaseline={props.dominantBaseline}
+                      fill="var(--foreground)"
+                      fontSize={11}
+                      fontWeight={600}
+                    >
+                      {payload.percentage}%
+                    </text>
+                  );
+                }}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.fill || defaultColors[index % defaultColors.length]}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        )}
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 leading-none font-medium">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
+      <CardFooter className="flex-col gap-2 text-sm pt-2">
+        <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+          {chartData.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-1.5">
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ backgroundColor: item.fill || defaultColors[idx % defaultColors.length] }}
+              />
+              <span className="text-muted-foreground">{item.label}</span>
+              <span className="font-medium text-foreground">({item.count})</span>
+            </div>
+          ))}
         </div>
-        <div className="leading-none text-muted-foreground">
-          Showing total visitors for the last 6 months
+        <div className="leading-none text-muted-foreground text-xs text-center mt-1">
+          {description ||
+            `Showing distribution across ${totalMeetings} total meetings`}
         </div>
       </CardFooter>
     </Card>

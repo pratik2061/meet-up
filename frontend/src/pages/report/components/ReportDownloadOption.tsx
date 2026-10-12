@@ -11,29 +11,61 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { FaCloudDownloadAlt } from "react-icons/fa";
+import { Loader2 } from "lucide-react";
 
-export function ReportDownloadOption() {
+interface ReportDownloadOptionProps {
+  onExport: () => void;
+  isExporting?: boolean;
+  disabled?: boolean;
+}
+
+export function ReportDownloadOption({
+  onExport,
+  isExporting = false,
+  disabled = false,
+}: ReportDownloadOptionProps) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
         <Button
           variant="outline"
-          className="border-primary text-primary bg-primary/20 font-medium hover:bg-primary hover:text-white hover:cursor-pointer transition-colors duration-400 ease-in-out"
+          disabled={disabled || isExporting}
+          className="border-primary text-primary bg-primary/20 font-medium hover:bg-primary hover:text-white hover:cursor-pointer transition-colors duration-300 ease-in-out h-9 gap-1.5"
         >
-          Export <FaCloudDownloadAlt className="" />
+          {isExporting ? (
+            <>
+              Exporting...
+              <Loader2 className="h-4 w-4 animate-spin" />
+            </>
+          ) : (
+            <>
+              Export
+              <FaCloudDownloadAlt className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Do you want to export the report?</AlertDialogTitle>
           <AlertDialogDescription>
-            The report will be exported in PDF format and will include all the
-            data and charts displayed on the report page.
+            The report will be exported in CSV format and will include comprehensive
+            meeting details, host information, duration, status, and participant
+            counts for the selected date range.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>No</AlertDialogCancel>
-          <AlertDialogAction>export</AlertDialogAction>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              onExport();
+            }}
+            disabled={isExporting}
+            className="cursor-pointer"
+          >
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
