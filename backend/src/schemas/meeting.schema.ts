@@ -81,3 +81,6 @@ export class Meeting extends Document {
 }
 
 export const MeetingSchema = SchemaFactory.createForClass(Meeting);
+MeetingSchema.index({ host: 1, scheduledAt: 1, createdAt: -1 });
+MeetingSchema.index({ participants: 1, scheduledAt: 1, createdAt: -1 });
+MeetingSchema.index({ meetingStatus: 1 });

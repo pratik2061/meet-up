@@ -300,24 +300,50 @@ export class WebrtcGateway
 
   @SubscribeMessage('leave-meeting')
   async handleLeaveMeeting(
-    @MessageBody() data: { roomId: string },
+    @MessageBody() data: { roomId: string } | string,
     @ConnectedSocket() client: AppSocket,
   ) {
+    const roomId = typeof data === 'string' ? data : data?.roomId;
     const user = client.data.user;
 
-    if (!data.roomId) {
+    if (!roomId) {
       throw new WsException('Room ID is required');
     }
 
-    if (!client.rooms.has(data.roomId)) {
-      throw new WsException('You have not joined this meeting');
+    if (client.rooms.has(roomId)) {
+      client.to(roomId).emit('user-left', {
+        socketId: client.id,
+        userId: user?.id,
+      });
+
+      await client.leave(roomId);
+    }
+  }
+
+  @SubscribeMessage('end-meeting')
+  async handleEndMeeting(
+    @MessageBody() data: { roomId: string } | string,
+    @ConnectedSocket() client: AppSocket,
+  ) {
+    const roomId = typeof data === 'string' ? data : data?.roomId;
+    const user = client.data.user;
+
+    if (!roomId) {
+      throw new WsException('Room ID is required');
     }
 
-    client.to(data.roomId).emit('user-left', {
-      socketId: client.id,
-      userId: user?.id,
+    if (!user) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const result = await this.meetingService.endMeeting(roomId, user.id);
+
+    client.to(roomId).emit('meeting-ended', {
+      roomId,
+      endedBy: user.id,
     });
 
-    await client.leave(data.roomId);
+    await client.leave(roomId);
+    return result;
   }
 }

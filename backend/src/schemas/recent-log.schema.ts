@@ -19,3 +19,4 @@ export class RecentLog extends Document {
 }
 
 export const RecentLogSchema = SchemaFactory.createForClass(RecentLog);
+RecentLogSchema.index({ user: 1, createdAt: -1 });

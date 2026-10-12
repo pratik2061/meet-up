@@ -7,9 +7,11 @@ import {
   Get,
   Param,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { MeetingService } from './meeting.service';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
+import { MeetingQueryDto } from './dto/meeting-query.dto';
 import type { Request } from 'express';
 import { TokenPayLoad } from 'src/types/tokenPayload';
 import { JwtAuthGuard } from 'src/strategy/auth/jwt-auth.guard';
@@ -34,12 +36,15 @@ export class MeetingController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  getAllMeetings(@Req() req: Request) {
+  getAllMeetings(
+    @Query() query: MeetingQueryDto,
+    @Req() req: Request,
+  ) {
     const user = req.user as TokenPayLoad;
     if (!user || !user.id || !user.email || !user.createdAt) {
       throw new UnauthorizedException('User not authenticated, please log in');
     }
-    return this.meetingService.getAllMeetings(user.id);
+    return this.meetingService.getAllMeetings(user.id, query);
   }
 
   @Get(':roomId')

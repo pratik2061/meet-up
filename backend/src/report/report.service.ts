@@ -310,8 +310,22 @@ export class ReportService {
         query.endDate,
       );
 
+      // Ensure a continuous monthly window of at least 6 months (5 previous months + current month)
+      // unless user explicitly passed a custom range spanning 6 or more months
+      let activityStartDate = new Date(startDate);
+      const monthDiff =
+        (endDate.getFullYear() - activityStartDate.getFullYear()) * 12 +
+        (endDate.getMonth() - activityStartDate.getMonth()) + 1;
+
+      if (!query.startDate || monthDiff < 6) {
+        activityStartDate = new Date(endDate);
+        activityStartDate.setMonth(activityStartDate.getMonth() - 5);
+        activityStartDate.setDate(1);
+        activityStartDate.setHours(0, 0, 0, 0);
+      }
+
       const matchStage: Record<string, any> = {
-        createdAt: { $gte: startDate, $lte: endDate },
+        createdAt: { $gte: activityStartDate, $lte: endDate },
       };
 
       if (query.scope === 'user' && userId) {
@@ -378,7 +392,7 @@ export class ReportService {
         mobile: number;
       }> = [];
 
-      const cursor = new Date(startDate);
+      const cursor = new Date(activityStartDate);
       cursor.setDate(1);
 
       while (cursor <= endDate) {
