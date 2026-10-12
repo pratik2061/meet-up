@@ -8,6 +8,7 @@ import { WebrtcModule } from './webrtc/webrtc.module';
 import { MeetingModule } from './meeting/meeting.module';
 import { RedisModule } from './redis/redis.module';
 import { RecentLogModule } from './recent-log/recent-log.module';
+import { ReportModule } from './report/report.module';
 
 @Module({
   imports: [
@@ -33,6 +34,8 @@ import { RecentLogModule } from './recent-log/recent-log.module';
     RedisModule,
 
     RecentLogModule,
+
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [AppService],
