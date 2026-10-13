@@ -34,6 +34,9 @@ interface MeetingViewProps {
   isMeetingsError?: boolean;
   currentUserId?: string;
   onRefreshMeetings?: () => void;
+  onCancelMeeting?: (roomId: string) => void;
+  isCancellingMeeting?: boolean;
+  cancellingRoomId?: string | null;
 }
 
 function MeetingView({
@@ -57,6 +60,9 @@ function MeetingView({
   isMeetingsError,
   currentUserId,
   onRefreshMeetings,
+  onCancelMeeting,
+  isCancellingMeeting,
+  cancellingRoomId,
 }: MeetingViewProps) {
   return (
     <div className="min-h-full bg-background text-foreground font-sans px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col items-center">
@@ -99,7 +105,7 @@ function MeetingView({
             <button
               onClick={() => handleJoin()}
               disabled={isPending || !meetingCode.trim()}
-              className="text-primary md:w-auto w-full border border-primary/40 bg-primary/10 hover:cursor-pointer font-medium px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
+              className="text-primary md:w-auto w-full border border-primary/40 bg-primary/10 hover:cursor-pointer font-medium px-4 py-2 rounded-lg hover:bg-primary hover:text-white transition duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center text-sm"
             >
               {isPending ? <Spinner className="size-4" /> : "Join"}
             </button>
@@ -119,14 +125,7 @@ function MeetingView({
               </p>
             </div>
 
-            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 mb-4">
-              <MeetingScheduleCalender />
-            </div>
-
-            <button className="w-full py-3 px-4 bg-primary hover:bg-primary/90 hover:cursor-pointer text-white font-medium rounded-xl transition-all text-sm shadow-xs hover:shadow-sm flex items-center justify-center gap-2">
-              <FiVideo className="w-4 h-4" />
-              <span>Schedule Now</span>
-            </button>
+            <MeetingScheduleCalender />
           </div>
         </div>
       </div>
@@ -151,6 +150,9 @@ function MeetingView({
         onRefresh={onRefreshMeetings}
         onJoin={(roomId) => handleJoin(roomId)}
         isJoining={isPending}
+        onCancel={onCancelMeeting}
+        isCancelling={isCancellingMeeting}
+        cancellingRoomId={cancellingRoomId}
       />
     </div>
   );

@@ -2,9 +2,13 @@ import { queryClient } from "@/App";
 import {
   createMeeting,
   endMeeting,
+  cancelMeeting,
+  updateMeeting,
   getAllMeetings,
   getMeeting,
   validateMeeting,
+  type CreateMeetingPayload,
+  type UpdateMeetingPayload,
 } from "@/pages/meeting/services/meeting";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import axios from "axios";
@@ -14,7 +18,8 @@ import type { MeetingQuery } from "@/pages/meeting/types/meeting-types";
 
 export const useCreateMeeting = () => {
   return useMutation({
-    mutationFn: createMeeting,
+    mutationFn: (payload?: string | CreateMeetingPayload) =>
+      createMeeting(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["meeting"],
@@ -90,6 +95,68 @@ export const useEndMeeting = () => {
     onError: (error) => {
       if (axios.isAxiosError(error)) {
         toast.error(error.response?.data?.message || "Failed to end meeting");
+      }
+    },
+  });
+};
+
+export const useCancelMeeting = () => {
+  return useMutation({
+    mutationFn: (roomId: string) => cancelMeeting(roomId),
+    onSuccess: (data) => {
+      toast.success(data?.message || "Meeting cancelled successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["meeting"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["meetings"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["recent-logs"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["report"],
+      });
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || "Failed to cancel meeting");
+      } else {
+        toast.error("Failed to cancel meeting");
+      }
+    },
+  });
+};
+
+export const useUpdateMeeting = () => {
+  return useMutation({
+    mutationFn: ({
+      roomId,
+      payload,
+    }: {
+      roomId: string;
+      payload: UpdateMeetingPayload;
+    }) => updateMeeting(roomId, payload),
+    onSuccess: (data) => {
+      toast.success(data?.message || "Meeting updated successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["meeting"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["meetings"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["recent-logs"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["report"],
+      });
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || "Failed to update meeting");
+      } else {
+        toast.error("Failed to update meeting");
       }
     },
   });

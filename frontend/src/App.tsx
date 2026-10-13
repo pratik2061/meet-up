@@ -7,8 +7,10 @@ import { AuthContainer } from "./pages/auth/Auth.container";
 import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
 import MeetingContainer from "./pages/meeting/Meeting.container";
 import Reportcontainer from "./pages/report/Report.container";
+import ProfileContainer from "./pages/profile/Profile.container";
 import MeetingMainPage from "./components/webrtc/components/MeetingMainPage";
 import { ProtectedRoute } from "./util/protectedRoutes";
+import ResetPasswordPage from "./pages/auth/ResetPassword.page";
 // import Historycontainer from "./pages/history/History.container";
 
 export const queryClient = new QueryClient();
@@ -21,6 +23,10 @@ function App() {
     {
       path: "/login",
       element: <AuthContainer />,
+    },
+    {
+      path: "/reset-password",
+      element: <ResetPasswordPage />,
     },
     {
       element: <ProtectedRoute />,
@@ -47,6 +53,10 @@ function App() {
             {
               path: "/report",
               element: <Reportcontainer />,
+            },
+            {
+              path: "/profile",
+              element: <ProfileContainer />,
             },
             // {
             //   path: "/history",

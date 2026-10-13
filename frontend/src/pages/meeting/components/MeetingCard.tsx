@@ -10,16 +10,33 @@ import {
   FiCoffee,
   FiBookOpen,
   FiShare2,
+  FiSlash,
+  FiXCircle,
+  FiTag,
 } from "react-icons/fi";
 import type { MeetingDetailsResponse } from "../types/meeting-types";
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 import toast from "react-hot-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 interface MeetingCardProps {
   meeting: MeetingDetailsResponse;
   currentUserId?: string;
   onJoin: (roomId: string) => void;
   isJoining?: boolean;
+  onCancel?: (roomId: string) => void;
+  isCancelling?: boolean;
 }
 
 export const MeetingCard: React.FC<MeetingCardProps> = ({
@@ -27,6 +44,8 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   currentUserId,
   onJoin,
   isJoining = false,
+  onCancel,
+  isCancelling = false,
 }) => {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -89,6 +108,8 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
   const status = (meeting.meetingStatus || "scheduled").toLowerCase();
   const isLive = status === "ongoing";
   const isCompleted = status === "completed";
+  const isCancelled = status === "cancelled";
+  const isScheduled = status === "scheduled";
 
   const renderStatusBadge = () => {
     switch (status) {
@@ -150,6 +171,12 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
         return (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">
             <FiCoffee className="w-3 h-3" /> Casual
+          </span>
+        );
+      case "otherMeeting":
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-md">
+            <FiTag className="w-3 h-3" /> Other
           </span>
         );
       default:
@@ -233,28 +260,78 @@ export const MeetingCard: React.FC<MeetingCardProps> = ({
       </div>
 
       <div className="pt-3 border-t border-border/60 flex items-center gap-2">
-        <button
-          onClick={() => onJoin(meeting.roomId)}
-          disabled={isJoining}
-          className={`flex-1 py-2.5 px-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
-            isLive
-              ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow-sm"
-              : isCompleted
-              ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              : "bg-primary hover:bg-primary/90 text-white shadow-xs"
-          }`}
-        >
-          <FiVideo className="w-4 h-4" />
-          <span>
-            {isLive
-              ? "Join Call Now"
-              : isCompleted
-              ? "Rejoin Meeting"
-              : isHost
-              ? "Start Meeting"
-              : "Join Meeting"}
-          </span>
-        </button>
+        {isCancelled ? (
+          <button
+            disabled
+            type="button"
+            className="flex-1 py-2.5 px-3 rounded-lg font-medium text-sm bg-muted/60 text-muted-foreground cursor-not-allowed flex items-center justify-center gap-2 border border-border/60"
+          >
+            <FiSlash className="w-4 h-4 text-rose-500" />
+            <span>Meeting Cancelled</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onJoin(meeting.roomId)}
+            disabled={isJoining}
+            className={`flex-1 py-2.5 px-3 rounded-lg font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer ${
+              isLive
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow-sm"
+                : isCompleted
+                ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                : "bg-primary hover:bg-primary/90 text-white shadow-xs"
+            }`}
+          >
+            <FiVideo className="w-4 h-4" />
+            <span>
+              {isLive
+                ? "Join Call Now"
+                : isCompleted
+                ? "Rejoin Meeting"
+                : isHost
+                ? "Start Meeting"
+                : "Join Meeting"}
+            </span>
+          </button>
+        )}
+
+        {isHost && isScheduled && onCancel && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                disabled={isCancelling}
+                className="p-2.5 text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-200/80 transition-colors cursor-pointer disabled:opacity-50"
+                title="Cancel Scheduled Meeting"
+              >
+                {isCancelling ? (
+                  <Spinner className="w-4 h-4" />
+                ) : (
+                  <FiXCircle className="w-4 h-4" />
+                )}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Cancel scheduled meeting?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to cancel the scheduled meeting with Room ID:{" "}
+                  <strong className="font-mono text-foreground">{meeting.roomId}</strong>?
+                  Participants will no longer be able to join.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Keep Meeting</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onCancel(meeting.roomId)}
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700 text-white cursor-pointer !bg-red-600 hover:!bg-red-700 !text-white"
+                >
+                  Yes, Cancel Meeting
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
 
         <button
           onClick={copyMeetingLink}

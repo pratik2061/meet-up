@@ -21,7 +21,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import { format } from "date-fns";
-import { Search, X, History, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, X, History } from "lucide-react";
 import type {
   RecentLogItem,
   RecentLogPagination,
@@ -202,78 +202,25 @@ export function DashboardRecentTable({
           )}
         </div>
 
-        {/* Action filter pills and limit selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1 bg-background/80 p-1 rounded-lg border border-border">
-            {ACTION_FILTERS.map((filter) => {
-              const isSelected = actionFilter === filter.value;
-              return (
-                <button
-                  key={filter.label}
-                  type="button"
-                  onClick={() => onActionFilterChange?.(filter.value)}
-                  className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${
-                    isSelected
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Page limit selector */}
-          {onLimitChange && (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground pl-1">
-              <span>Show</span>
-              <div className="flex items-center bg-background/80 p-0.5 rounded-lg border border-border">
-                {LIMIT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => onLimitChange(opt)}
-                    className={`px-2 py-0.5 text-xs rounded font-medium transition-colors cursor-pointer ${
-                      limit === opt
-                        ? "bg-muted text-foreground font-semibold"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quick Page Navigator in toolbar */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-border/80 text-xs text-muted-foreground">
-            <span>
-              Page <strong className="text-foreground">{Math.min(page, Math.max(1, totalPages))}</strong> of{" "}
-              <strong className="text-foreground">{Math.max(1, totalPages)}</strong>
-            </span>
-            <div className="flex items-center bg-background/80 p-0.5 rounded-lg border border-border">
+        {/* Action filter pills */}
+        <div className="flex items-center gap-1 bg-background/80 p-1 rounded-lg border border-border">
+          {ACTION_FILTERS.map((filter) => {
+            const isSelected = actionFilter === filter.value;
+            return (
               <button
+                key={filter.label}
                 type="button"
-                onClick={() => onPageChange?.(page - 1)}
-                disabled={!hasPrevPage || isLoading || totalPages <= 1}
-                className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Previous page"
+                onClick={() => onActionFilterChange?.(filter.value)}
+                className={`px-2.5 py-1 text-xs rounded-md font-medium transition-colors cursor-pointer ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
               >
-                <ChevronLeft className="w-3.5 h-3.5" />
+                {filter.label}
               </button>
-              <button
-                type="button"
-                onClick={() => onPageChange?.(page + 1)}
-                disabled={!hasNextPage || isLoading || totalPages <= 1}
-                className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Next page"
-              >
-                <ChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
       </div>
 
@@ -354,20 +301,51 @@ export function DashboardRecentTable({
       </Table>
 
       {/* Pagination Footer */}
-      <div className="px-6 py-3 border-t border-border/80 bg-muted/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-        <div>
-          {total > 0 ? (
-            <>
-              Showing <span className="font-medium text-foreground">{startRecord}</span> to{" "}
-              <span className="font-medium text-foreground">{endRecord}</span> of{" "}
-              <span className="font-medium text-foreground">{total}</span> logs
-            </>
-          ) : (
-            <span>Showing 0 of 0 logs</span>
+      <div className="px-6 py-3 border-t border-border/80 bg-muted/10 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4">
+          <div>
+            {total > 0 ? (
+              <>
+                Showing <span className="font-medium text-foreground">{startRecord}</span> to{" "}
+                <span className="font-medium text-foreground">{endRecord}</span> of{" "}
+                <span className="font-medium text-foreground">{total}</span> logs
+              </>
+            ) : (
+              <span>Showing 0 of 0 logs</span>
+            )}
+          </div>
+
+          {onLimitChange && (
+            <div className="flex items-center gap-1.5 pl-3 border-l border-border/80">
+              <span>Show</span>
+              <div className="flex items-center bg-background/80 p-0.5 rounded-lg border border-border">
+                {LIMIT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => onLimitChange(opt)}
+                    className={`px-2 py-0.5 text-xs rounded font-medium transition-colors cursor-pointer ${
+                      limit === opt
+                        ? "bg-muted text-foreground font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              <span>per page</span>
+            </div>
           )}
         </div>
 
-        <Pagination className="mx-0 w-auto justify-end">
+        <div className="flex items-center gap-3">
+          <span className="text-xs">
+            Page <strong className="text-foreground">{Math.min(page, Math.max(1, totalPages))}</strong> of{" "}
+            <strong className="text-foreground">{Math.max(1, totalPages)}</strong>
+          </span>
+
+          <Pagination className="mx-0 w-auto justify-end">
           <PaginationContent className="gap-1">
             <PaginationItem>
               <PaginationPrevious
@@ -422,5 +400,6 @@ export function DashboardRecentTable({
         </Pagination>
       </div>
     </div>
-  );
+  </div>
+);
 }

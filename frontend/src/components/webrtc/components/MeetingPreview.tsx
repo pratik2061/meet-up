@@ -14,16 +14,33 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+const MEETING_TYPES = [
+  { value: "casualMeeting", label: "Casual Meeting" },
+  { value: "formalMeeting", label: "Formal Meeting" },
+  { value: "studyMeeting", label: "Study Meeting" },
+  { value: "otherMeeting", label: "Other" },
+] as const;
 
 interface handleJoinProps {
-  onJoin: (micStatus: boolean, cameraStatus: boolean) => void;
+  onJoin: (micStatus: boolean, cameraStatus: boolean, meetingType: string) => void;
   isPending: boolean;
 }
+
 function MeetingPreview({ onJoin, isPending }: handleJoinProps) {
   const webCamRef = useRef<Webcam>(null);
 
   const [isCameraOn, setIsCameraOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
+  const [meetingType, setMeetingType] = useState<string>("casualMeeting");
 
   const handleCameraChange = (enabled: boolean) => {
     setIsCameraOn(enabled);
@@ -53,7 +70,7 @@ function MeetingPreview({ onJoin, isPending }: handleJoinProps) {
       );
       return;
     }
-    onJoin(isMicOn, isCameraOn);
+    onJoin(isMicOn, isCameraOn, meetingType);
   };
 
   return (
@@ -131,6 +148,31 @@ function MeetingPreview({ onJoin, isPending }: handleJoinProps) {
               </Field>
             </FieldLabel>
           </FieldGroup>
+
+          {/* Meeting Type Dropdown */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="meeting-type-select" className="text-sm font-medium text-foreground/80">
+              Meeting Type
+            </Label>
+            <Select
+              value={meetingType}
+              onValueChange={setMeetingType}
+            >
+              <SelectTrigger
+                id="meeting-type-select"
+                className="w-full h-12 text-md "
+              >
+                <SelectValue placeholder="Select meeting type" />
+              </SelectTrigger>
+              <SelectContent>
+                {MEETING_TYPES.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Button
             className="md:text-lg text-md py-6 hover:cursor-pointer bg-primary/80 hover:bg-primary"

@@ -1,6 +1,7 @@
 import {
   useGetAllMeetings,
   useValidateMeeting,
+  useCancelMeeting,
 } from "@/util/api/api-hooks/use-meeting";
 import { useCurrentUser } from "@/util/api/api-hooks/use-current-user";
 import MeetingView from "./Meeting.view";
@@ -16,6 +17,7 @@ function MeetingContainer() {
   const [limit, setLimit] = useState<number>(5);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [activeTab, setActiveTab] = useState<FilterTab>("all");
+  const [cancellingRoomId, setCancellingRoomId] = useState<string | null>(null);
 
   const navigate = useNavigate();
 
@@ -57,6 +59,17 @@ function MeetingContainer() {
   });
 
   const { mutate: validateMeeting, isPending } = useValidateMeeting();
+  const { mutate: cancelMeetingMutate, isPending: isCancellingMeeting } =
+    useCancelMeeting();
+
+  const handleCancelMeeting = (roomId: string) => {
+    setCancellingRoomId(roomId);
+    cancelMeetingMutate(roomId, {
+      onSettled: () => {
+        setCancellingRoomId(null);
+      },
+    });
+  };
 
   const handleJoin = async (customCode?: string) => {
     const targetCode = customCode || meetingCode;
@@ -108,6 +121,9 @@ function MeetingContainer() {
       isMeetingsError={isMeetingsError}
       currentUserId={currentUserId}
       onRefreshMeetings={refetchMeetings}
+      onCancelMeeting={handleCancelMeeting}
+      isCancellingMeeting={isCancellingMeeting}
+      cancellingRoomId={cancellingRoomId}
     />
   );
 }

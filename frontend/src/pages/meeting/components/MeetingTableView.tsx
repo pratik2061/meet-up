@@ -14,16 +14,33 @@ import {
   FiClock,
   FiUsers,
   FiShare2,
+  FiSlash,
+  FiXCircle,
 } from "react-icons/fi";
 import type { MeetingDetailsResponse } from "../types/meeting-types";
 import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 import toast from "react-hot-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 interface MeetingTableViewProps {
   meetings: MeetingDetailsResponse[];
   currentUserId?: string;
   onJoin: (roomId: string) => void;
   isJoining?: boolean;
+  onCancel?: (roomId: string) => void;
+  isCancelling?: boolean;
+  cancellingRoomId?: string | null;
 }
 
 export const MeetingTableView: React.FC<MeetingTableViewProps> = ({
@@ -31,6 +48,9 @@ export const MeetingTableView: React.FC<MeetingTableViewProps> = ({
   currentUserId,
   onJoin,
   isJoining = false,
+  onCancel,
+  isCancelling = false,
+  cancellingRoomId = null,
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -140,6 +160,10 @@ export const MeetingTableView: React.FC<MeetingTableViewProps> = ({
             const hostName = hostObj?.fullName || hostObj?.email || "Unknown Host";
             const isHost = Boolean(currentUserId && hostId && currentUserId === hostId);
             const isLive = (meeting.meetingStatus || "").toLowerCase() === "ongoing";
+            const isCompleted = (meeting.meetingStatus || "").toLowerCase() === "completed";
+            const isCancelled = (meeting.meetingStatus || "").toLowerCase() === "cancelled";
+            const isScheduled = (meeting.meetingStatus || "").toLowerCase() === "scheduled";
+            const isRowCancelling = isCancelling && cancellingRoomId === meeting.roomId;
 
             return (
               <TableRow
@@ -210,18 +234,67 @@ export const MeetingTableView: React.FC<MeetingTableViewProps> = ({
                     >
                       <FiShare2 className="w-3.5 h-3.5" />
                     </button>
-                    <button
-                      onClick={() => onJoin(meeting.roomId)}
-                      disabled={isJoining}
-                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                        isLive
-                          ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                          : "bg-primary hover:bg-primary/90 text-white"
-                      }`}
-                    >
-                      <FiVideo className="w-3.5 h-3.5" />
-                      <span>{isLive ? "Join Call" : "Join"}</span>
-                    </button>
+
+                    {isHost && isScheduled && onCancel && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <button
+                            type="button"
+                            disabled={isRowCancelling}
+                            className="p-1.5 text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+                            title="Cancel Scheduled Meeting"
+                          >
+                            {isRowCancelling ? (
+                              <Spinner className="w-3.5 h-3.5" />
+                            ) : (
+                              <FiXCircle className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Cancel scheduled meeting?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to cancel the scheduled meeting with Room ID:{" "}
+                              <strong className="font-mono text-foreground">{meeting.roomId}</strong>?
+                              Participants will no longer be able to join.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Keep Meeting</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onCancel(meeting.roomId)}
+                              variant="destructive"
+                              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer !bg-red-600 hover:!bg-red-700 !text-white"
+                            >
+                              Yes, Cancel Meeting
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+
+                    {isCancelled ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground border border-border/60">
+                        <FiSlash className="w-3 h-3 text-rose-500" />
+                        Cancelled
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => onJoin(meeting.roomId)}
+                        disabled={isJoining}
+                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                          isLive
+                            ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            : isCompleted
+                            ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                            : "bg-primary hover:bg-primary/90 text-white"
+                        }`}
+                      >
+                        <FiVideo className="w-3.5 h-3.5" />
+                        <span>{isLive ? "Join Call" : isCompleted ? "Rejoin" : "Join"}</span>
+                      </button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

@@ -51,10 +51,10 @@ function MeetingMainPage() {
         String(currentUserId) === String(meetingHostId)
     );
 
-  async function handleJoin(micStatus: boolean, cameraStatus: boolean) {
+  async function handleJoin(micStatus: boolean, cameraStatus: boolean, meetingType: string) {
     let finalRoomId = roomIdFromUrl;
     if (!finalRoomId || finalRoomId === "new") {
-      const meetingDetail = (await createMeeting()) as MeetingResponse;
+      const meetingDetail = (await createMeeting(meetingType)) as MeetingResponse;
       finalRoomId = meetingDetail.meetingData.roomId;
       setIsCreatedByMe(true);
     }

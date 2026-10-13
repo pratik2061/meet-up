@@ -6,8 +6,6 @@ import {
   FiGrid,
   FiList,
   FiAlertCircle,
-  FiChevronLeft,
-  FiChevronRight,
 } from "react-icons/fi";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -28,7 +26,7 @@ import { MeetingCard } from "./MeetingCard";
 import { MeetingTableView } from "./MeetingTableView";
 import { MeetingEmptyState } from "./MeetingEmptyState";
 
-export type FilterTab = "all" | "ongoing" | "scheduled" | "completed";
+export type FilterTab = "all" | "ongoing" | "scheduled" | "completed" | "cancelled";
 export type ViewMode = "grid" | "table";
 
 export interface MeetingListSectionProps {
@@ -40,6 +38,9 @@ export interface MeetingListSectionProps {
   onRefresh?: () => void;
   onJoin: (roomId: string) => void;
   isJoining?: boolean;
+  onCancel?: (roomId: string) => void;
+  isCancelling?: boolean;
+  cancellingRoomId?: string | null;
   pagination?: MeetingPagination;
   counts?: MeetingStatusCounts;
   page?: number;
@@ -88,6 +89,9 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
   onRefresh,
   onJoin,
   isJoining = false,
+  onCancel,
+  isCancelling = false,
+  cancellingRoomId = null,
   pagination,
   counts: serverCounts,
   page = 1,
@@ -123,12 +127,14 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
     let ongoing = 0;
     let scheduled = 0;
     let completed = 0;
+    let cancelled = 0;
 
     meetings.forEach((m) => {
       const s = (m.meetingStatus || "scheduled").toLowerCase();
       if (s === "ongoing") ongoing++;
       else if (s === "scheduled") scheduled++;
       else if (s === "completed") completed++;
+      else if (s === "cancelled") cancelled++;
     });
 
     return {
@@ -136,7 +142,7 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
       ongoing,
       scheduled,
       completed,
-      cancelled: 0,
+      cancelled,
     };
   }, [meetings]);
 
@@ -280,80 +286,39 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
           >
             Completed ({effectiveCounts.completed})
           </button>
+
+          <button
+            onClick={() => onTabChange?.("cancelled")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap ${
+              activeTab === "cancelled"
+                ? "bg-rose-600 text-white shadow-xs"
+                : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            Cancelled ({effectiveCounts.cancelled})
+          </button>
         </div>
 
-        {/* Search input and Per-Page Selector */}
-        <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-72">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search room ID or host..."
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-              className="w-full pl-9 pr-8 py-1.5 bg-muted/40 border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
-            />
-            {searchValue && (
-              <button
-                type="button"
-                onClick={handleClearSearch}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded-full cursor-pointer"
-                title="Clear search"
-              >
-                <FiX className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {onLimitChange && (
-            <div className="hidden sm:flex items-center gap-1 text-xs text-muted-foreground pl-1">
-              <span>Show</span>
-              <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border">
-                {LIMIT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => onLimitChange(opt)}
-                    className={`px-2 py-0.5 text-xs rounded font-medium transition-colors cursor-pointer ${
-                      limit === opt
-                        ? "bg-card text-foreground font-semibold shadow-xs"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            </div>
+        {/* Search input */}
+        <div className="relative w-full sm:w-72">
+          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search room ID or host..."
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="w-full pl-9 pr-8 py-1.5 bg-muted/40 border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+          />
+          {searchValue && (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground rounded-full cursor-pointer"
+              title="Clear search"
+            >
+              <FiX className="w-3.5 h-3.5" />
+            </button>
           )}
-
-          {/* Quick Page Navigator in toolbar */}
-          <div className="flex items-center gap-1.5 pl-2 border-l border-border/80 text-xs text-muted-foreground">
-            <span>
-              Page <strong className="text-foreground">{Math.min(page, Math.max(1, totalPages))}</strong> of{" "}
-              <strong className="text-foreground">{Math.max(1, totalPages)}</strong>
-            </span>
-            <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border">
-              <button
-                type="button"
-                onClick={() => onPageChange?.(page - 1)}
-                disabled={!hasPrevPage || isLoading || totalPages <= 1}
-                className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Previous page"
-              >
-                <FiChevronLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={() => onPageChange?.(page + 1)}
-                disabled={!hasNextPage || isLoading || totalPages <= 1}
-                className="p-1 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer"
-                title="Next page"
-              >
-                <FiChevronRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -411,6 +376,8 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
               currentUserId={currentUserId}
               onJoin={onJoin}
               isJoining={isJoining}
+              onCancel={onCancel}
+              isCancelling={isCancelling && cancellingRoomId === meeting.roomId}
             />
           ))}
         </div>
@@ -420,24 +387,58 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
           currentUserId={currentUserId}
           onJoin={onJoin}
           isJoining={isJoining}
+          onCancel={onCancel}
+          isCancelling={isCancelling}
+          cancellingRoomId={cancellingRoomId}
         />
       )}
 
       {/* Pagination Controls */}
-      <div className="mt-8 pt-4 border-t border-border/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-        <div>
-          {total > 0 ? (
-            <>
-              Showing <span className="font-medium text-foreground">{startRecord}</span> to{" "}
-              <span className="font-medium text-foreground">{endRecord}</span> of{" "}
-              <span className="font-medium text-foreground">{total}</span> meetings
-            </>
-          ) : (
-            <span>Showing 0 of 0 meetings</span>
+      <div className="mt-8 pt-4 border-t border-border/80 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-4">
+          <div>
+            {total > 0 ? (
+              <>
+                Showing <span className="font-medium text-foreground">{startRecord}</span> to{" "}
+                <span className="font-medium text-foreground">{endRecord}</span> of{" "}
+                <span className="font-medium text-foreground">{total}</span> meetings
+              </>
+            ) : (
+              <span>Showing 0 of 0 meetings</span>
+            )}
+          </div>
+
+          {onLimitChange && (
+            <div className="flex items-center gap-1.5 pl-3 border-l border-border/80">
+              <span>Show</span>
+              <div className="flex items-center bg-muted/40 p-0.5 rounded-lg border border-border">
+                {LIMIT_OPTIONS.map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => onLimitChange(opt)}
+                    className={`px-2 py-0.5 text-xs rounded font-medium transition-colors cursor-pointer ${
+                      limit === opt
+                        ? "bg-card text-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+              <span>per page</span>
+            </div>
           )}
         </div>
 
-        <Pagination className="mx-0 w-auto justify-end">
+        <div className="flex items-center gap-3">
+          <span className="text-xs">
+            Page <strong className="text-foreground">{Math.min(page, Math.max(1, totalPages))}</strong> of{" "}
+            <strong className="text-foreground">{Math.max(1, totalPages)}</strong>
+          </span>
+
+          <Pagination className="mx-0 w-auto justify-end">
           <PaginationContent className="gap-1">
             <PaginationItem>
               <PaginationPrevious
@@ -491,6 +492,7 @@ export const MeetingListSection: React.FC<MeetingListSectionProps> = ({
           </PaginationContent>
         </Pagination>
       </div>
-    </section>
-  );
+    </div>
+  </section>
+);
 };

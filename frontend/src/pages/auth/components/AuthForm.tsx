@@ -10,6 +10,7 @@ import { FaGithub } from "react-icons/fa";
 import { CgGoogle } from "react-icons/cg";
 import type { LoginRequestPayload } from "../Auth.view";
 import { Spinner } from "@/components/ui/spinner";
+import { ForgotPasswordModal } from "./ForgotPasswordModal";
 
 export const AuthForm = ({
   isPending,
@@ -19,6 +20,7 @@ export const AuthForm = ({
   loginMutate: (data: LoginRequestPayload) => void;
 }) => {
   const [showPassword, setShowPassword] = React.useState(false);
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = React.useState(false);
 
   const { control, handleSubmit } = useForm<LoginInputSchema>({
     resolver: zodResolver(LoginSchema),
@@ -107,7 +109,10 @@ export const AuthForm = ({
           </div>
 
           <div className="text-right">
-            <span className="text-sm text-blue-500 hover:text-primary hover:underline hover:cursor-pointer">
+            <span
+              onClick={() => setIsForgotPasswordOpen(true)}
+              className="text-sm text-blue-500 hover:text-primary hover:underline hover:cursor-pointer"
+            >
               Forgot password?
             </span>
           </div>
@@ -119,6 +124,11 @@ export const AuthForm = ({
             {isPending ? <Spinner /> : "Sign In"}
           </Button>
         </form>
+
+        <ForgotPasswordModal
+          isOpen={isForgotPasswordOpen}
+          onClose={() => setIsForgotPasswordOpen(false)}
+        />
         <div className="pt-4 text-right">
           <span className="text-sm text-blue-500 hover:cursor-pointer hover:text-primary hover:underline">
             Don't have an account?
