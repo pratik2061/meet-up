@@ -7,15 +7,19 @@ import {
   BadRequestException,
   Get,
   HttpCode,
+  Patch,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { User } from 'src/schemas/user.schema';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import type { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { VerifyToken } from 'src/utils/verify-token';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -23,7 +27,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
     private readonly verify: VerifyToken,
-  ) {}
+  ) { }
 
   @Post('register')
   async create(@Body() createAuthDto: CreateAuthDto): Promise<{
@@ -72,9 +76,9 @@ export class AuthController {
 
     const userPayload:
       | {
-          isMatch: boolean;
-          userId: string;
-        }
+        isMatch: boolean;
+        userId: string;
+      }
       | undefined = await this.verify.verifyToken(convertURIToken);
 
     if (!userPayload) {
@@ -171,4 +175,41 @@ export class AuthController {
       data: response,
     };
   }
+
+  @Patch('profile')
+  async updateProfile(
+    @Req() req: Request,
+    @Body() updateAuthDto: UpdateProfileDto,
+  ) {
+    const accessToken = req.cookies['accessToken'] as string;
+    if (!accessToken) {
+      throw new UnauthorizedException(
+        'Access token is missing, Please login again',
+      );
+    }
+    const convertURIToken = decodeURIComponent(accessToken);
+    const response = await this.authService.updateProfile(
+      convertURIToken,
+      updateAuthDto,
+    );
+    return {
+      message: 'Profile updated successfully',
+      data: response,
+    };
+  }
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return await this.authService.requestPasswordReset(forgotPasswordDto.email);
+  }
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
+  }
+
 }

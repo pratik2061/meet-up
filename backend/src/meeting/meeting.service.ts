@@ -6,6 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateMeetingDto } from './dto/create-meeting.dto';
+import { UpdateMeetingDto } from './dto/update-meeting.dto';
 import { MeetingQueryDto } from './dto/meeting-query.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -186,6 +187,151 @@ export class MeetingService {
       }
       throw new InternalServerErrorException(
         'An error occurred while ending the meeting',
+      );
+    }
+  }
+
+  async cancelMeeting(roomId: string, userId: string) {
+    try {
+      if (!roomId || !userId) {
+        throw new BadRequestException('Room ID and User ID are required');
+      }
+      const findMeeting = await this.MeetingModel.findOne({
+        roomId,
+      });
+      if (!findMeeting) {
+        throw new NotFoundException('Meeting not found');
+      }
+      const hostId =
+        typeof findMeeting.host === 'object' &&
+        findMeeting.host !== null &&
+        '_id' in (findMeeting.host as any)
+          ? (findMeeting.host as any)._id.toString()
+          : (findMeeting.host as any).toString();
+      const isHost = hostId === userId.toString();
+      if (!isHost) {
+        throw new ForbiddenException('Only the host can cancel the meeting');
+      }
+      if (findMeeting.meetingStatus === MeetingStatus.CANCELLED) {
+        return {
+          message: 'Meeting already cancelled',
+          meetingData: findMeeting,
+        };
+      }
+      if (findMeeting.meetingStatus === MeetingStatus.COMPLETED) {
+        throw new BadRequestException('Cannot cancel a completed meeting');
+      }
+
+      findMeeting.meetingStatus = MeetingStatus.CANCELLED;
+      await findMeeting.save();
+
+      await this.recentLogService.createLog(
+        userId,
+        'Cancelled Meeting',
+        `Cancelled the meeting with room ID: ${findMeeting.roomId}`,
+      );
+
+      return {
+        message: 'Meeting cancelled successfully',
+        meetingData: findMeeting,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while cancelling the meeting',
+      );
+    }
+  }
+
+  async updateMeeting(
+    roomId: string,
+    userId: string,
+    updateMeetingDto: UpdateMeetingDto,
+  ) {
+    try {
+      if (!roomId || !userId) {
+        throw new BadRequestException('Room ID and User ID are required');
+      }
+      const findMeeting = await this.MeetingModel.findOne({
+        roomId,
+      });
+      if (!findMeeting) {
+        throw new NotFoundException('Meeting not found');
+      }
+      const hostId =
+        typeof findMeeting.host === 'object' &&
+        findMeeting.host !== null &&
+        '_id' in (findMeeting.host as any)
+          ? (findMeeting.host as any)._id.toString()
+          : (findMeeting.host as any).toString();
+      const isHost = hostId === userId.toString();
+      if (!isHost) {
+        throw new ForbiddenException('Only the host can update the meeting');
+      }
+
+      if (updateMeetingDto.meetingStatus === MeetingStatus.CANCELLED) {
+        if (findMeeting.meetingStatus === MeetingStatus.COMPLETED) {
+          throw new BadRequestException('Cannot cancel a completed meeting');
+        }
+        if (findMeeting.meetingStatus !== MeetingStatus.CANCELLED) {
+          await this.recentLogService.createLog(
+            userId,
+            'Cancelled Meeting',
+            `Cancelled the meeting with room ID: ${findMeeting.roomId}`,
+          );
+        }
+      }
+
+      if (updateMeetingDto.meetingStatus === MeetingStatus.COMPLETED) {
+        if (findMeeting.meetingStatus !== MeetingStatus.COMPLETED) {
+          const endedAt = new Date();
+          const calculateMeetingDuration = findMeeting.startedAt
+            ? endedAt.getTime() - findMeeting.startedAt.getTime()
+            : (findMeeting as any).createdAt
+              ? endedAt.getTime() - new Date((findMeeting as any).createdAt).getTime()
+              : 0;
+          findMeeting.endedAt = endedAt;
+          findMeeting.meetingDuration = String(calculateMeetingDuration);
+          await this.recentLogService.createLog(
+            userId,
+            'Ended Meeting',
+            `Ended the meeting with room ID: ${findMeeting.roomId}`,
+          );
+        }
+      }
+
+      if (updateMeetingDto.meetingType) {
+        findMeeting.meetingType = updateMeetingDto.meetingType;
+      }
+      if (updateMeetingDto.scheduledAt !== undefined) {
+        findMeeting.scheduledAt = updateMeetingDto.scheduledAt;
+      }
+      if (updateMeetingDto.meetingStatus) {
+        findMeeting.meetingStatus = updateMeetingDto.meetingStatus;
+      }
+
+      await findMeeting.save();
+
+      return {
+        message: 'Meeting updated successfully',
+        meetingData: findMeeting,
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while updating the meeting',
       );
     }
   }

@@ -18,6 +18,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/redis/redis.service';
 import { RecentLogService } from 'src/recent-log/recent-log.service';
+import crypto from 'crypto'
+import { MailService } from 'src/resend/resend.service';
 
 @Injectable()
 export class AuthService {
@@ -29,6 +31,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly recentLogService: RecentLogService,
+    private readonly mailService: MailService
   ) { }
 
   async create(createAuthDto: CreateAuthDto): Promise<{
@@ -141,6 +144,8 @@ export class AuthService {
         refreshToken: null,
       });
 
+      await this.redisService.client.del(`user:${userId}`);
+
       await this.recentLogService.createLog(
         userId,
         'User Logout',
@@ -227,7 +232,7 @@ export class AuthService {
         JSON.stringify(userDetail),
         'EX',
         Number(this.configService.get('REDIS_TTL')!)
-      )
+      );
       return userDetail;
     } catch (error) {
       if (
@@ -239,6 +244,133 @@ export class AuthService {
       throw new InternalServerErrorException(
         'An error occurred while fetching user data',
       );
+    }
+  }
+
+  async updateProfile(
+    token: string,
+    updateData: { fullName?: string; phoneNumber?: string; address?: string },
+  ) {
+    try {
+      const verifyAccessToken: TokenPayLoad = this.jwtService.verify(token, {
+        secret: this.configService.get<string>('ACCESS_SECRET'),
+      });
+      if (!verifyAccessToken || !verifyAccessToken.id) {
+        throw new UnauthorizedException('Invalid access token');
+      }
+
+      const updatedUser = await this.UserModel.findByIdAndUpdate(
+        verifyAccessToken.id,
+        {
+          ...(updateData.fullName && { fullName: updateData.fullName }),
+          ...(updateData.phoneNumber && { phoneNumber: updateData.phoneNumber }),
+          ...(updateData.address && { address: updateData.address }),
+        },
+        { returnDocument: 'after' },
+      );
+
+      if (!updatedUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      await this.redisService.client.set(
+        `user:${updatedUser.id}`,
+        JSON.stringify(updatedUser),
+        'EX',
+        Number(this.configService.get('REDIS_TTL') || 3600),
+      );
+
+      await this.recentLogService.createLog(
+        updatedUser.id,
+        'Profile Updated',
+        'User updated profile information',
+      );
+
+      return updatedUser;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'An error occurred while updating profile',
+        {
+          cause: error,
+        },
+      );
+    }
+  }
+
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    try {
+      const user = await this.UserModel.findOne({ email });
+      if (!user) {
+        return {
+          message: 'If an account exists with this email, a reset link has been sent.',
+        };
+      }
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      await this.redisService.client.set(
+        `password_reset:${resetToken}`,
+        user._id.toString(),
+        'EX',
+        900,
+      );
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL')
+      const resetLink = `${frontendUrl}/reset-password?token=${resetToken}`
+
+      await this.mailService.sendPasswordResetEmail(user.email, resetLink);
+
+      await this.recentLogService.createLog(
+        user.id,
+        'Password Reset Requested',
+        'A reset link was sent to user email',
+      );
+      return {
+        message: 'If an account exists with this email, a reset link has been sent.',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException("An error occurred while requesting password reset",)
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    try {
+      const userId = await this.redisService.client.get(`password_reset:${token}`);
+      if (!userId) {
+        throw new BadRequestException('Invalid or expired reset token');
+      }
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      const updatedUser = await this.UserModel.findByIdAndUpdate(
+        userId,
+        { password: hashedPassword },
+        { returnDocument: 'after' },
+      );
+
+      if (!updatedUser) {
+        throw new NotFoundException('User not found');
+      }
+      await this.redisService.client.del(`password_reset:${token}`);
+      await this.redisService.client.del(`user:${userId}`);
+
+      await this.recentLogService.createLog(
+        userId,
+        'Password Changed',
+        'Password was successfully updated using reset link',
+      );
+
+      return {
+        message: 'Password has been successfully updated. You can now login.',
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException("An error occurred while resetting password")
     }
   }
 }

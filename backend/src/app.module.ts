@@ -9,6 +9,8 @@ import { MeetingModule } from './meeting/meeting.module';
 import { RedisModule } from './redis/redis.module';
 import { RecentLogModule } from './recent-log/recent-log.module';
 import { ReportModule } from './report/report.module';
+import { MailModule } from './resend/resend.module';
+import { MailService } from './resend/resend.service';
 
 @Module({
   imports: [
@@ -36,8 +38,10 @@ import { ReportModule } from './report/report.module';
     RecentLogModule,
 
     ReportModule,
+
+    MailModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, MailService],
 })
-export class AppModule {}
+export class AppModule { }
