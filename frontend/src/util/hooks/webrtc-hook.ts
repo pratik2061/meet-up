@@ -3,34 +3,51 @@ import toast from "react-hot-toast";
 import { io, type Socket } from "socket.io-client";
 
 interface userJoinedSocketType {
-    socketId: string,
+    socketId: string;
     user: {
-        id: string,
-        email: string
-    }
+        id: string;
+        email: string;
+    };
 }
 
 interface webRTCOfferType {
-    fromSocketId: string,
-    offer: RTCSessionDescriptionInit
+    fromSocketId: string;
+    offer: RTCSessionDescriptionInit;
 }
 
 interface webRTCAnswerType {
-    fromSocketId: string,
-    answer: RTCSessionDescriptionInit
+    fromSocketId: string;
+    answer: RTCSessionDescriptionInit;
 }
 
 interface iceCandidateType {
-    roomId: string,
-    targetSocketId: string,
-    candidate: RTCIceCandidateInit
+    roomId: string;
+    targetSocketId: string;
+    candidate: RTCIceCandidateInit;
 }
 
-const ICE_SERVERS = {
+const ICE_SERVERS: RTCConfiguration = {
     iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        // Free OpenRelay TURN servers for NAT traversal
+        {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelay',
+            credential: 'openrelay',
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443',
+            username: 'openrelay',
+            credential: 'openrelay',
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelay',
+            credential: 'openrelay',
+        },
     ],
+    iceCandidatePoolSize: 10,
 };
 
 export const useWebRTC = (
@@ -39,165 +56,145 @@ export const useWebRTC = (
     isCameraOn: boolean,
     onMeetingEnded?: () => void
 ) => {
-    const socketRef = useRef<Socket | null>(null)
-    const peerConnectionRef = useRef<RTCPeerConnection | null>(null)
+    const socketRef = useRef<Socket | null>(null);
+    const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
-    const [localStream, setLocalStream] = useState<MediaStream | null>(null)
-    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
+    const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+    const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
     const localStreamRef = useRef<MediaStream | null>(null);
-
     const remoteSocketIdRef = useRef<string | null>(null);
 
+    // Queue to hold candidates that arrive before setRemoteDescription completes
+    const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+
     useEffect(() => {
-        //initializing socket
         socketRef.current = io(import.meta.env.VITE_SOCKET_URL, {
             withCredentials: true
-        })
-        // initializing peer connection
-        peerConnectionRef.current = new RTCPeerConnection(ICE_SERVERS)
+        });
 
+        const pc = new RTCPeerConnection(ICE_SERVERS);
+        peerConnectionRef.current = pc;
 
-        //Initializer function to provide local media and add track 
+        // Helpful debug logs to see ICE connection status in console
+        pc.oniceconnectionstatechange = () => {
+            console.log('ICE Connection State:', pc.iceConnectionState);
+            if (pc.iceConnectionState === 'failed') {
+                console.error('ICE Connection failed: Check TURN server configuration');
+            }
+        };
+
+        pc.onconnectionstatechange = () => {
+            console.log('Connection State:', pc.connectionState);
+        };
+
         const initMedia = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia(
-                    {
-                        video: true,
-                        audio: true
-                    }
-                )
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: true
+                });
                 stream.getVideoTracks().forEach(track => track.enabled = isCameraOn);
                 stream.getAudioTracks().forEach(track => track.enabled = isMicOn);
                 localStreamRef.current = stream;
-
-                setLocalStream(stream)
+                setLocalStream(stream);
 
                 stream.getTracks().forEach((track) => {
-                    if (peerConnectionRef.current) {
-                        peerConnectionRef.current.addTrack(track, stream)
-                    }
-                })
+                    pc.addTrack(track, stream);
+                });
 
-                socketRef.current?.emit('join-meeting', roomId)
+                socketRef.current?.emit('join-meeting', roomId);
             } catch (error) {
-                toast.error("Error accessing media devices")
+                toast.error("Error accessing media devices");
             }
-        }
-        initMedia()
+        };
+        initMedia();
 
-        //Handling network paths (ice candidates ) and receiving of remote video , via network address
-        peerConnectionRef.current.onicecandidate = (event) => {
+        pc.onicecandidate = (event) => {
             if (event.candidate && remoteSocketIdRef.current) {
                 socketRef.current?.emit('ice-candidate', {
                     roomId,
                     targetSocketId: remoteSocketIdRef.current,
-                    candidate: event.candidate
-                })
+                    candidate: event.candidate.toJSON ? event.candidate.toJSON() : event.candidate
+                });
             }
-        }
+        };
 
-        //after webRTC receive other persons video it saves in state
-        peerConnectionRef.current.ontrack = (event) => {
-            setRemoteStream(event.streams[0])
-        }
+        pc.ontrack = (event) => {
+            if (event.streams && event.streams[0]) {
+                setRemoteStream(event.streams[0]);
+            }
+        };
 
-        //After this now we will handel client offers and answer, when user joins ,in the room
+        // Helper function to flush buffered candidates once remoteDescription is set
+        const processPendingCandidates = async () => {
+            while (pendingCandidatesRef.current.length > 0) {
+                const candidate = pendingCandidatesRef.current.shift();
+                if (candidate && pc.remoteDescription) {
+                    try {
+                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (e) {
+                        console.error('Error adding queued ICE candidate', e);
+                    }
+                }
+            }
+        };
 
-        //this function is called when room is empty , and the person joining is the first person to join., so that person creates an offer
-        socketRef.current.on('user-joined', async (
-            data: userJoinedSocketType) => {
-            remoteSocketIdRef.current = data.socketId
+        socketRef.current.on('user-joined', async (data: userJoinedSocketType) => {
+            remoteSocketIdRef.current = data.socketId;
 
-            const offer = await peerConnectionRef.current?.createOffer();
-            await peerConnectionRef.current?.setLocalDescription(offer)
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
 
-            //this socket emit function send offer to newly joined user through our backend
             socketRef.current?.emit('webrtc-offer', {
                 roomId,
                 targetSocketId: data.socketId,
                 offer
-            })
-        })
+            });
+        });
 
-        //after first person creates an offer , the other persons to join will receives that offer and creates an answer regarding it offer
+        socketRef.current.on('webrtc-offer', async (offerData: webRTCOfferType) => {
+            remoteSocketIdRef.current = offerData.fromSocketId;
 
-        socketRef.current.on('webrtc-offer', async (
-            offerData: webRTCOfferType
-        ) => {
-            remoteSocketIdRef.current = offerData.fromSocketId
-            //we need to set the other persons offer as our remote descriptions
+            await pc.setRemoteDescription(new RTCSessionDescription(offerData.offer));
+            await processPendingCandidates();
 
-            await peerConnectionRef.current?.setRemoteDescription(new RTCSessionDescription(offerData.offer))
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
 
-            //lets create our answer on received offers
-            const answer = await peerConnectionRef.current?.createAnswer()
-
-            //set out answer as local description
-            await peerConnectionRef.current?.setLocalDescription(answer)
-
-            //now send answer to the all 
             socketRef.current?.emit('webrtc-answer', {
                 roomId,
                 targetSocketId: offerData.fromSocketId,
                 answer
-            })
-        })
+            });
+        });
 
-        //after receiving offer , now we send offer back to them to connect us and they will reply back with an answer.
+        socketRef.current.on('webrtc-answer', async (answerData: webRTCAnswerType) => {
+            await pc.setRemoteDescription(new RTCSessionDescription(answerData.answer));
+            await processPendingCandidates();
+        });
 
-        socketRef.current.on('webrtc-answer', async (
-            answerData: webRTCAnswerType) => {
-            // they save our response as Remote description
-            await peerConnectionRef.current?.setRemoteDescription(
-                new RTCSessionDescription(answerData.answer)
-            )
+        socketRef.current.on('ice-candidate', async (iceCandidateData: iceCandidateType) => {
+            if (!iceCandidateData.candidate) return;
 
-        })
-
-        //At last the client sends us a network path (ICE candidate)
-
-        socketRef.current.on('ice-candidate', async (
-            iceCandidateData: iceCandidateType) => {
-            try {
-                await peerConnectionRef.current?.addIceCandidate(
-                    new RTCIceCandidate(iceCandidateData.candidate)
-                )
-            } catch (error) {
-                toast.error('Error adding received ice candidate')
+            // If remoteDescription is already set, add immediately. Otherwise, queue it!
+            if (pc.remoteDescription && pc.remoteDescription.type) {
+                try {
+                    await pc.addIceCandidate(new RTCIceCandidate(iceCandidateData.candidate));
+                } catch (error) {
+                    console.error('Error adding received ice candidate', error);
+                }
+            } else {
+                pendingCandidatesRef.current.push(iceCandidateData.candidate);
             }
-        })
-
-        //handling user left condition 
+        });
 
         socketRef.current.on('user-left', () => {
-            setRemoteStream(null)
-            remoteSocketIdRef.current = null
-            if (peerConnectionRef.current) {
-                peerConnectionRef.current.close()
-                peerConnectionRef.current = new RTCPeerConnection(ICE_SERVERS)
-            }
+            setRemoteStream(null);
+            remoteSocketIdRef.current = null;
+            pendingCandidatesRef.current = [];
+        });
 
-            if (localStreamRef.current) {
-                localStreamRef.current.getTracks().forEach((track) => {
-                    peerConnectionRef.current?.addTrack(track, localStreamRef.current!)
-                })
-            }
-            peerConnectionRef.current!.onicecandidate = (event) => {
-                if (event.candidate && remoteSocketIdRef.current) {
-                    socketRef.current?.emit('ice-candidate', {
-                        roomId,
-                        targetSocketId: remoteSocketIdRef.current,
-                        candidate: event.candidate
-                    })
-                }
-            }
-            peerConnectionRef.current!.ontrack = (event) => {
-                setRemoteStream(event.streams[0])
-            }
-        })
-
-        //handling meeting ended condition
         socketRef.current.on('meeting-ended', () => {
             if (localStreamRef.current) {
                 localStreamRef.current.getTracks().forEach((track) => track.stop());
@@ -206,16 +203,14 @@ export const useWebRTC = (
             onMeetingEnded?.();
         });
 
-        //cleanup function to handle socket close , when leave meeting is triggerd
-
         return () => {
             if (localStreamRef.current) {
                 localStreamRef.current.getTracks().forEach(track => track.stop());
             }
-            socketRef.current?.disconnect()
-            peerConnectionRef.current?.close()
-        }
-    }, [roomId])
+            socketRef.current?.disconnect();
+            pc.close();
+        };
+    }, [roomId]);
 
     const leaveMeeting = () => {
         if (socketRef.current && roomId) {
@@ -234,5 +229,5 @@ export const useWebRTC = (
         remoteStream,
         leaveMeeting,
         endMeeting
-    }
-}
+    };
+};
