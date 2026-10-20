@@ -9,6 +9,7 @@ import { TokenGenerate } from 'src/utils/token-generate';
 import { VerifyToken } from 'src/utils/verify-token';
 import { JwtService } from '@nestjs/jwt';
 import { RecentLogModule } from 'src/recent-log/recent-log.module';
+import { GoogleStrategy } from 'src/strategy/google.strategy';
 
 @Module({
   imports: [
@@ -22,6 +23,6 @@ import { RecentLogModule } from 'src/recent-log/recent-log.module';
     ]),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, TokenGenerate, VerifyToken, JwtService],
+  providers: [AuthService, JwtStrategy, TokenGenerate, VerifyToken, JwtService, GoogleStrategy],
 })
 export class AuthModule { }

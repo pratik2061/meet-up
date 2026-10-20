@@ -6,6 +6,11 @@ export enum UserRole {
   ADMIN = 'admin',
 }
 
+export enum AuthProvider {
+  LOCAL = 'local',
+  GOOGLE = 'google',
+}
+
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true })
@@ -14,21 +19,31 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   email!: string;
 
-  @Prop({ required: true, select: false })
-  password!: string;
+  // Made optional for OAuth users
+  @Prop({ required: false, select: false })
+  password?: string;
 
-  @Prop({ required: true })
-  phoneNumber!: string;
+  // Made optional for OAuth users
+  @Prop({ required: false })
+  phoneNumber?: string;
 
-  @Prop({ required: true })
-  address!: string;
+  // Made optional for OAuth users
+  @Prop({ required: false })
+  address?: string;
+
+  @Prop({ type: String, enum: AuthProvider, default: AuthProvider.LOCAL })
+  provider!: AuthProvider;
+
+  @Prop({ required: false })
+  googleId?: string;
+
+  @Prop({ required: false })
+  avatarUrl?: string;
 
   @Prop({ type: String, enum: UserRole, default: UserRole.USER })
   role!: UserRole;
 
-  @Prop({
-    select: false,
-  })
+  @Prop({ select: false })
   refreshToken?: string;
 
   createdAt!: Date;

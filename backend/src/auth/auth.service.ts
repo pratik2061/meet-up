@@ -9,7 +9,7 @@ import { CreateAuthDto } from './dto/create-auth.dto';
 import bcrypt from 'bcryptjs';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from 'src/schemas/user.schema';
+import { AuthProvider, User } from 'src/schemas/user.schema';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { TokenPayLoad } from 'src/types/tokenPayload';
 import { TokenGenerate } from 'src/utils/token-generate';
@@ -87,7 +87,7 @@ export class AuthService {
 
       const isPasswordValid = await bcrypt.compare(
         loginAuthDto.password,
-        user.password,
+        user.password!,
       );
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid email or password');
@@ -373,4 +373,76 @@ export class AuthService {
       throw new InternalServerErrorException("An error occurred while resetting password")
     }
   }
+
+  async googleLogin(googleUser: {
+    googleId: string;
+    email: string;
+    fullName: string;
+    avatarUrl?: string;
+  }) {
+    if (!googleUser.email) {
+      throw new BadRequestException('No email provided by Google');
+    }
+
+    // Check if user already exists
+    let user = await this.UserModel.findOne({ email: googleUser.email });
+
+    if (!user) {
+      //Create new user if not found
+      user = await this.UserModel.create({
+        email: googleUser.email,
+        fullName: googleUser.fullName,
+        googleId: googleUser.googleId,
+        avatarUrl: googleUser.avatarUrl,
+        provider: AuthProvider.GOOGLE,
+      });
+
+      await this.recentLogService.createLog(
+        user.id,
+        'User Google Signup',
+        'User registered via Google OAuth',
+      );
+    } else if (!user.googleId) {
+      // Link existing account with googleId if it matches the email
+      user.googleId = googleUser.googleId;
+      if (googleUser.avatarUrl && !user.avatarUrl) {
+        user.avatarUrl = googleUser.avatarUrl;
+      }
+      await user.save();
+    }
+
+    //Generate tokens
+    const userPayload: TokenPayLoad = {
+      id: user.id,
+      email: user.email,
+      createdAt: user.createdAt,
+    };
+
+    const { accessToken, refreshToken } =
+      this.token.generateToken(userPayload);
+
+    //Save hashed refresh token & cache user in Redis
+    const { password: _password, ...restData } = user.toJSON();
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    await this.UserModel.findByIdAndUpdate(user._id, {
+      refreshToken: hashedRefreshToken,
+    });
+
+    await this.redisService.client.set(
+      `user:${user.id}`,
+      JSON.stringify(restData),
+      'EX',
+      Number(this.configService.get('REDIS_TTL')!),
+    );
+
+    await this.recentLogService.createLog(
+      user.id,
+      'User Google Login',
+      'User logged in via Google OAuth',
+    );
+
+    return { accessToken, refreshToken };
+  }
+
 }

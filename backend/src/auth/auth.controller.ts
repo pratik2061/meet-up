@@ -9,6 +9,7 @@ import {
   HttpCode,
   Patch,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
@@ -20,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { VerifyToken } from 'src/utils/verify-token';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleAuthGuard } from 'src/strategy/auth/google.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -211,5 +213,46 @@ export class AuthController {
       resetPasswordDto.newPassword,
     );
   }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuth() {
+    // Passport redirects to Google login page automatically
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthRedirect(
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const googleUser = req.user as {
+      googleId: string;
+      email: string;
+      fullName: string;
+      avatarUrl?: string;
+    };
+
+    const tokens = await this.authService.googleLogin(googleUser);
+
+    // Set the same HTTP-only cookies as normal login
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: Number(this.configService.get('ACCESS_EXPIRES_IN')) * 1000,
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: Number(this.configService.get('REFRESH_EXPIRES_IN')) * 1000,
+    });
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    return res.redirect(`${frontendUrl}/dashboard`);
+  }
+
 
 }
