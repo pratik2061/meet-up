@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeClosed } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { FaGithub } from "react-icons/fa";
 import { CgGoogle } from "react-icons/cg";
 import type { LoginRequestPayload } from "../Auth.view";
 import { Spinner } from "@/components/ui/spinner";
 import { ForgotPasswordModal } from "./ForgotPasswordModal";
+import { Link } from "react-router-dom";
+import { initiateGoogleAuth } from "../services/oauth";
 
 export const AuthForm = ({
   isPending,
@@ -129,10 +130,14 @@ export const AuthForm = ({
           isOpen={isForgotPasswordOpen}
           onClose={() => setIsForgotPasswordOpen(false)}
         />
-        <div className="pt-4 text-right">
-          <span className="text-sm text-blue-500 hover:cursor-pointer hover:text-primary hover:underline">
-            Don't have an account?
-          </span>
+        <div className="pt-4 text-center sm:text-right">
+          <span className="text-sm text-gray-600">Don't have an account? </span>
+          <Link
+            to="/signup"
+            className="text-sm font-semibold text-blue-500 hover:cursor-pointer hover:text-primary hover:underline"
+          >
+            Sign Up
+          </Link>
         </div>
         <div className="relative py-4">
           <Separator />
@@ -140,21 +145,15 @@ export const AuthForm = ({
             or continue with
           </label>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="w-full">
           <Button
+            type="button"
+            onClick={initiateGoogleAuth}
             variant="outline"
             className="h-12 w-full flex items-center justify-center gap-2 hover:cursor-pointer"
           >
             <CgGoogle />
             Google
-          </Button>
-
-          <Button
-            variant="outline"
-            className="h-12 w-full flex items-center justify-center gap-2 hover:cursor-pointer"
-          >
-            <FaGithub className="w-5 h-5" />
-            GitHub
           </Button>
         </div>
       </div>

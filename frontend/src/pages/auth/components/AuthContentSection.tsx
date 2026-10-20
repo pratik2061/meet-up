@@ -1,8 +1,13 @@
 import { IoVideocam } from "react-icons/io5";
-import type { AuthviewProps } from "../Auth.view";
+import type { items } from "../Auth.view";
 import LaptopImage from "@/assets/login-laptop.png";
 
-export const AuthContentSection = ({ items }: { items: AuthviewProps }) => {
+interface AuthContentSectionProps {
+  items: items[] | { items: items[] };
+}
+
+export const AuthContentSection = ({ items }: AuthContentSectionProps) => {
+  const featureList = Array.isArray(items) ? items : items.items;
   return (
     <div className="w-full min-h-full">
       <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
@@ -26,7 +31,7 @@ export const AuthContentSection = ({ items }: { items: AuthviewProps }) => {
 
           <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.9fr)]">
             <ul className="space-y-6">
-              {items.items.map((data) => (
+              {featureList.map((data) => (
                 <li key={data.title} className="flex items-start gap-4">
                   <data.icon className={`${data.color} mt-0.5 size-8 shrink-0 sm:size-10`} />
                   <span className="min-w-0">

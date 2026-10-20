@@ -4,6 +4,7 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import RootLayout from "./components/layout/RootLayout";
 import { NotFound } from "./components/not-found";
 import { AuthContainer } from "./pages/auth/Auth.container";
+import { SignupContainer } from "./pages/auth/Signup.container";
 import { DashboardContainer } from "./pages/dashboard/Dashboard.container";
 import MeetingContainer from "./pages/meeting/Meeting.container";
 import Reportcontainer from "./pages/report/Report.container";
@@ -23,6 +24,10 @@ function App() {
     {
       path: "/login",
       element: <AuthContainer />,
+    },
+    {
+      path: "/signup",
+      element: <SignupContainer />,
     },
     {
       path: "/reset-password",
