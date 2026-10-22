@@ -260,19 +260,27 @@ export class AuthController {
 
     const tokens = await this.authService.exchangeGoogleAuthCode(code);
 
-    // Set cookies on a normal API response — same as email/password login
+    const accessMaxAge = Number(this.configService.get('ACCESS_EXPIRES_IN')) * 1000;
+    const refreshMaxAge = Number(this.configService.get('REFRESH_EXPIRES_IN')) * 1000;
+
+    console.log('[Google Exchange] accessToken present:', !!tokens.accessToken, 'length:', tokens.accessToken?.length);
+    console.log('[Google Exchange] refreshToken present:', !!tokens.refreshToken, 'length:', tokens.refreshToken?.length);
+    console.log('[Google Exchange] accessMaxAge:', accessMaxAge, 'refreshMaxAge:', refreshMaxAge);
+
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production' ? true : false,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: Number(this.configService.get('ACCESS_EXPIRES_IN')) * 1000,
+      maxAge: accessMaxAge,
+      path: '/',
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production' ? true : false,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: Number(this.configService.get('REFRESH_EXPIRES_IN')) * 1000,
+      maxAge: refreshMaxAge,
+      path: '/',
     });
 
     return {
