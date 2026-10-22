@@ -445,4 +445,38 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+ 
+  async storeGoogleAuthCode(tokens: {
+    accessToken: string;
+    refreshToken: string;
+  }): Promise<string> {
+    const code = crypto.randomBytes(32).toString('hex');
+    await this.redisService.client.set(
+      `google_auth_code:${code}`,
+      JSON.stringify(tokens),
+      'EX',
+      30, // 30 second TTL — just enough time for the frontend to exchange it
+    );
+    return code;
+  }
+
+
+  async exchangeGoogleAuthCode(
+    code: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const key = `google_auth_code:${code}`;
+    const data = await this.redisService.client.get(key);
+
+    if (!data) {
+      throw new UnauthorizedException(
+        'Invalid or expired authorization code',
+      );
+    }
+
+    // Delete immediately so the code can't be reused
+    await this.redisService.client.del(key);
+
+    return JSON.parse(data) as { accessToken: string; refreshToken: string };
+  }
+
 }

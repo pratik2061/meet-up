@@ -226,33 +226,59 @@ export class AuthController {
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    const googleUser = req.user as {
-      googleId: string;
-      email: string;
-      fullName: string;
-      avatarUrl?: string;
-    };
+    try {
+      const googleUser = req.user as {
+        googleId: string;
+        email: string;
+        fullName: string;
+        avatarUrl?: string;
+      };
 
-    const tokens = await this.authService.googleLogin(googleUser);
+      const tokens = await this.authService.googleLogin(googleUser);
 
-    // Set the same HTTP-only cookies as normal login
+      // Store tokens in Redis with a one-time code instead of setting cookies
+      // on the redirect response (cookies on 302 redirects are unreliable cross-origin)
+      const code = await this.authService.storeGoogleAuthCode(tokens);
+
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      return res.redirect(`${frontendUrl}/auth/callback?code=${code}`);
+    } catch {
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      return res.redirect(`${frontendUrl}/login?error=google_auth_failed`);
+    }
+  }
+
+  @Post('google/exchange')
+  @HttpCode(200)
+  async exchangeGoogleCode(
+    @Body('code') code: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    if (!code) {
+      throw new BadRequestException('Authorization code is required');
+    }
+
+    const tokens = await this.authService.exchangeGoogleAuthCode(code);
+
+    // Set cookies on a normal API response — same as email/password login
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: Number(this.configService.get('ACCESS_EXPIRES_IN')) * 1000,
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: process.env.NODE_ENV === 'production' ? true : false,
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: Number(this.configService.get('REFRESH_EXPIRES_IN')) * 1000,
     });
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-    return res.redirect(`${frontendUrl}/dashboard`);
+    return {
+      message: 'Google login successful',
+    };
   }
 
-
 }
+
