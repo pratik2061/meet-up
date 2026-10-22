@@ -12,6 +12,7 @@ import ProfileContainer from "./pages/profile/Profile.container";
 import MeetingMainPage from "./components/webrtc/components/MeetingMainPage";
 import { ProtectedRoute } from "./util/protectedRoutes";
 import ResetPasswordPage from "./pages/auth/ResetPassword.page";
+import GoogleCallbackPage from "./pages/auth/GoogleCallback.page";
 // import Historycontainer from "./pages/history/History.container";
 
 export const queryClient = new QueryClient();
@@ -32,6 +33,10 @@ function App() {
     {
       path: "/reset-password",
       element: <ResetPasswordPage />,
+    },
+    {
+      path: "/auth/callback",
+      element: <GoogleCallbackPage />,
     },
     {
       element: <ProtectedRoute />,
