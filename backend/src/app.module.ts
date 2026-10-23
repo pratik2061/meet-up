@@ -11,6 +11,7 @@ import { RecentLogModule } from './recent-log/recent-log.module';
 import { ReportModule } from './report/report.module';
 import { MailModule } from './resend/resend.module';
 import { MailService } from './resend/resend.service';
+import { FriendModule } from './friend/friend.module';
 
 @Module({
   imports: [
@@ -40,6 +41,8 @@ import { MailService } from './resend/resend.service';
     ReportModule,
 
     MailModule,
+
+    FriendModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailService],

@@ -1,7 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { randomUUID } from 'crypto';
+import { randomBytes } from 'crypto';
 import { User } from './user.schema';
 import mongoose, { Document, Types } from 'mongoose';
+
+export function generateRoomCode() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const getSegment = (length: number) => {
+    const bytes = randomBytes(length);
+    let result = '';
+    for (let i = 0; i < length; i++) {
+      result += chars[bytes[i] % chars.length];
+    }
+    return result;
+  };
+  return `${getSegment(4)}-${getSegment(4)}`;
+}
 
 export enum MeetingType {
   CASUALMEETING = 'casualMeeting',
@@ -25,7 +38,7 @@ export class Meeting extends Document {
     type: String,
     required: true,
     unique: true,
-    default: () => randomUUID(),
+    default: () => generateRoomCode(),
   })
   roomId!: string;
 

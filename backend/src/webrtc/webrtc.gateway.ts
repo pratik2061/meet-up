@@ -50,7 +50,20 @@ function getCookieValue(cookieHeader: string | undefined, name: string) {
 }
 @WebSocketGateway({
   cors: {
-    origin: process.env.FRONTEND_URL?.split(','),
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowed = (process.env.FRONTEND_URL!)
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+      if (!origin || allowed.includes(origin)) return callback(null, true);
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   },
 })
@@ -101,16 +114,22 @@ export class WebrtcGateway
   }
 
   handleConnection(client: AppSocket) {
+    const userId = client.data.user?.id;
     console.log(
       'client connected to socket = ',
       client.data.user?.email,
       'having id = ',
-      client.data.user?.id,
+      userId,
     );
+
+    if (userId) {
+      client.join(`user:${userId}`);
+    }
+
     client.on('disconnecting', () => {
       const user = client.data.user;
       for (const roomId of client.rooms) {
-        if (roomId === client.id) {
+        if (roomId === client.id || roomId.startsWith('user:')) {
           continue;
         }
         client.to(roomId).emit('user-left', {
@@ -119,6 +138,13 @@ export class WebrtcGateway
         });
       }
     });
+  }
+
+
+  sendToUser(userId: string, event: string, payload: any) {
+    if (this.server) {
+      this.server.to(`user:${userId}`).emit(event, payload);
+    }
   }
 
   handleDisconnect(client: AppSocket) {
@@ -359,5 +385,29 @@ export class WebrtcGateway
 
     await client.leave(roomId);
     return result;
+  }
+
+  @SubscribeMessage('invite-friend')
+  handleInviteFriend(
+    @MessageBody()
+    data: {
+      recipientId: string;
+      roomId: string;
+      message?: string;
+    },
+    @ConnectedSocket() client: AppSocket,
+  ) {
+    const user = client.data.user;
+    if (!user || !data?.recipientId || !data?.roomId) {
+      return;
+    }
+    this.sendToUser(data.recipientId, 'meeting:incoming_invite', {
+      roomId: data.roomId,
+      inviter: {
+        id: user.id,
+        email: user.email,
+      },
+      message: data.message,
+    });
   }
 }

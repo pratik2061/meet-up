@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { Badge } from "./badge";
+import { Spinner } from "./spinner";
 import { useCurrentUser } from "@/util/api/api-hooks/use-current-user";
 import DefaultProfileImage from "@/assets/default_profile.webp";
 
@@ -18,6 +19,8 @@ interface ProfileProps {
   icon: React.ElementType;
   color: string | "";
   function?: () => void;
+  isLoading?: boolean;
+  loadingText?: string;
 }
 
 export const Profile = ({ data }: { data: ProfileProps[] }) => {
@@ -85,11 +88,16 @@ export const Profile = ({ data }: { data: ProfileProps[] }) => {
               <DropdownMenuItem
                 key={item.name}
                 asChild={!!item.href}
-                className={`cursor-pointer rounded-md transition-colors ${item.color || "text-foreground hover:bg-muted"}`}
-                onClick={(event) => {
+                disabled={item.isLoading}
+                className={`cursor-pointer rounded-md transition-colors ${item.color || "text-foreground hover:bg-muted"} ${
+                  item.isLoading ? "opacity-75 cursor-not-allowed pointer-events-none" : ""
+                }`}
+                onSelect={(event) => {
                   if (item.function) {
                     event.preventDefault();
-                    item.function();
+                    if (!item.isLoading) {
+                      item.function();
+                    }
                   }
                 }}
               >
@@ -103,8 +111,12 @@ export const Profile = ({ data }: { data: ProfileProps[] }) => {
                   </Link>
                 ) : (
                   <div className="w-full flex items-center px-2 py-1.5 text-sm font-medium">
-                    <item.icon className="size-4 mr-2.5" />
-                    <span>{item.name}</span>
+                    {item.isLoading ? (
+                      <Spinner className="size-4 mr-2.5 shrink-0" />
+                    ) : (
+                      <item.icon className="size-4 mr-2.5 shrink-0" />
+                    )}
+                    <span>{item.isLoading ? (item.loadingText || "Loading...") : item.name}</span>
                   </div>
                 )}
               </DropdownMenuItem>

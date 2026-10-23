@@ -9,8 +9,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { type RemoteParticipant, useWebRTC } from "@/util/hooks/webrtc-hook";
-import { useEndMeeting } from "@/util/api/api-hooks/use-meeting";
+import { useEndMeeting, useGetMeeting } from "@/util/api/api-hooks/use-meeting";
+import { MeetingFriendsSheet } from "./MeetingFriendsSheet";
 import {
+  Clock,
   Copy,
   LogOut,
   Mic,
@@ -19,6 +21,7 @@ import {
   PhoneOff,
   Pin,
   PinOff,
+  UserPlus,
   Users,
   Video,
   VideoOff,
@@ -32,6 +35,20 @@ interface MeetingRoomProps {
   onLeave: () => void;
   roomId: string;
   isHost: boolean;
+  startedAt?: Date | string;
+}
+
+function formatMeetingDuration(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const pad = (num: number) => num.toString().padStart(2, "0");
+
+  if (hours > 0) {
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  }
+  return `${pad(minutes)}:${pad(seconds)}`;
 }
 
 // Dedicated Remote Video Tile
@@ -75,7 +92,7 @@ function RemoteVideoTile({
         <button
           onClick={onPin}
           title={isPinned ? "Unpin participant" : "Pin participant"}
-          className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70 z-10"
+          className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70 z-10 cursor-pointer"
         >
           {isPinned ? <PinOff size={14} /> : <Pin size={14} />}
         </button>
@@ -90,11 +107,40 @@ function MeetingRoom({
   onLeave,
   roomId,
   isHost,
+  startedAt,
 }: MeetingRoomProps) {
+  const { data: meetingQueryData } = useGetMeeting(roomId);
+  const effectiveStartedAt = startedAt || meetingQueryData?.meetingData?.startedAt;
+
+  const startTimeRef = useRef<number>(Date.now());
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+
+  // Sync with backend start timestamp if available
+  useEffect(() => {
+    if (effectiveStartedAt) {
+      const parsedTime = new Date(effectiveStartedAt).getTime();
+      if (!isNaN(parsedTime) && parsedTime <= Date.now()) {
+        startTimeRef.current = parsedTime;
+        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - parsedTime) / 1000)));
+      }
+    }
+  }, [effectiveStartedAt]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const diff = Math.max(0, Math.floor((now - startTimeRef.current) / 1000));
+      setElapsedSeconds(diff);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const { mutateAsync: mutateEndMeeting, isPending: isEndingMeeting } =
     useEndMeeting();
   const [isEnding, setIsEnding] = useState(false);
   const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
+  const [isFriendsSheetOpen, setIsFriendsSheetOpen] = useState(false);
   const [pinnedSocketId, setPinnedSocketId] = useState<string | null>(null);
 
   const {
@@ -210,55 +256,86 @@ function MeetingRoom({
     <section className="fixed inset-0 z-50 flex flex-col bg-white p-4 text-slate-900 md:p-6">
       {/* Header */}
       <header className="flex items-center justify-between gap-4 pb-4">
-        {/* Share Meeting */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="gap-2 rounded-xl border-slate-200 bg-white shadow-sm hover:border-primary/30 hover:bg-primary/5"
-            >
-              <Copy size={16} />
-              <span className="hidden sm:inline">Share meeting</span>
-            </Button>
-          </DialogTrigger>
+        {/* Left Action Buttons: Share & Add Friends */}
+        <div className="flex items-center gap-2">
+          {/* Share Meeting Dialog */}
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                className="gap-2 rounded-xl border-slate-200 bg-white shadow-sm hover:border-primary/30 hover:bg-primary/5 cursor-pointer"
+              >
+                <Copy size={16} />
+                <span className="hidden sm:inline">Share meeting</span>
+              </Button>
+            </DialogTrigger>
 
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Share meeting</DialogTitle>
-              <DialogDescription>
-                Share this meeting room ID with the participant you want to invite.
-              </DialogDescription>
-            </DialogHeader>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Share meeting</DialogTitle>
+                <DialogDescription>
+                  Share this meeting room ID or invite your friends directly.
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="mt-4 space-y-2">
-              <p className="text-sm font-medium text-slate-700">
-                Meeting room ID
-              </p>
-
-              <div className="flex items-center gap-2">
-                <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="break-all font-mono text-sm font-medium text-slate-800">
-                    {roomId}
+              <div className="mt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-slate-600">
+                    Meeting room ID
                   </p>
+
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5">
+                      <p className="break-all font-mono text-xs sm:text-sm font-medium text-slate-800">
+                        {roomId}
+                      </p>
+                    </div>
+
+                    <Button
+                      size="icon"
+                      className="h-10 w-10 shrink-0 rounded-xl cursor-pointer"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(roomId);
+                        toast.success("Room ID copied to clipboard");
+                      }}
+                    >
+                      <Copy size={16} />
+                    </Button>
+                  </div>
                 </div>
 
-                <Button
-                  size="icon"
-                  className="h-11 w-11 shrink-0 rounded-xl"
-                  onClick={async () => {
-                    await navigator.clipboard.writeText(roomId);
-                    toast.success("Room ID copied to clipboard");
-                  }}
-                >
-                  <Copy size={18} />
-                </Button>
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-xs text-slate-500">
+                    Want to invite your friends?
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsFriendsSheetOpen(true)}
+                    className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/10 rounded-xl cursor-pointer"
+                  >
+                    <UserPlus size={14} />
+                    <span>Open Friends</span>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Participant Count Badge */}
+            </DialogContent>
+          </Dialog>
+          </div>
+        {/* Right Section: Timer & Participant Count Badge */}
         <div className="flex items-center gap-2">
+          {/* Meeting Timer */}
+          <div
+            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 shadow-sm"
+            title="Meeting duration"
+          >
+            <Clock size={15} className="text-primary" />
+            <span className="font-mono font-medium tabular-nums text-slate-700">
+              {formatMeetingDuration(elapsedSeconds)}
+            </span>
+          </div>
+
+          {/* Participant Count Badge */}
           <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 shadow-sm">
             <Users size={15} className="text-primary" />
             <span>
@@ -332,18 +409,43 @@ function MeetingRoom({
             <>
               {/* Case 0: Waiting for others (0 remote participants) */}
               {remoteParticipants.length === 0 && (
-                <div className="flex flex-col items-center justify-center gap-3 text-center">
+                <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <span className="text-xl font-semibold">?</span>
                   </div>
 
                   <div>
-                    <p className="font-medium text-slate-700">
+                    <p className="font-semibold text-slate-800 text-base">
                       Waiting for another participant
                     </p>
-                    <p className="mt-1 text-sm text-slate-400">
-                      Share the meeting room ID to invite someone
+                    <p className="mt-1 text-xs sm:text-sm text-slate-400 max-w-sm">
+                      Invite your friends to jump into this meeting or share the room link.
                     </p>
+                  </div>
+
+                  {/* Quick Action Buttons in Empty State */}
+                  <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+                    <Button
+                      onClick={() => setIsFriendsSheetOpen(true)}
+                      className="gap-2 rounded-xl shadow-sm text-xs sm:text-sm font-medium px-4 cursor-pointer"
+                    >
+                      <UserPlus size={16} />
+                      <span>Add Friends</span>
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(
+                          `${window.location.origin}/meeting/${roomId}`
+                        );
+                        toast.success("Meeting link copied to clipboard");
+                      }}
+                      className="gap-2 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-xs sm:text-sm font-medium px-4 cursor-pointer"
+                    >
+                      <Copy size={15} />
+                      <span>Copy Link</span>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -493,139 +595,13 @@ function MeetingRoom({
             </>
           )}
 
-          {/* Local Stream Picture-in-Picture for 0 or 1 remote participant */}
-          {remoteParticipants.length <= 1 && localStream && (
-            <div className="absolute bottom-5 right-5 overflow-hidden rounded-xl border-2 border-white bg-slate-200 shadow-xl z-20">
-              {cameraActive ? (
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="h-32 w-44 object-cover -scale-x-100 sm:h-40 sm:w-56"
-                />
-              ) : (
-                <div className="flex h-32 w-44 items-center justify-center bg-slate-300 sm:h-40 sm:w-56">
-                  <span className="text-sm font-semibold text-slate-700">
-                    Camera Off
-                  </span>
-                </div>
-              )}
-
-              <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm flex items-center gap-1.5">
-                <span>You</span>
-                {!micActive && <MicOff size={12} className="text-red-400" />}
-              </div>
-            </div>
-          )}
-
-          {/* Case 2: Multi-user meeting (2+ remote participants) */}
-          {remoteParticipants.length >= 2 && (
-            <>
-              {pinnedParticipant ? (
-                /* Pinned Focus View */
-                <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-                  <RemoteVideoTile
-                    participant={pinnedParticipant}
-                    onPin={() => setPinnedSocketId(null)}
-                    isPinned={true}
-                  />
-
-                  {/* Top-Right Mini Stream Ribbon */}
-                  <div className="absolute top-4 right-4 flex max-w-[85%] gap-2 overflow-x-auto p-1.5 rounded-xl bg-white/70 backdrop-blur-md border border-slate-200 shadow-lg z-20">
-                    {/* Local participant thumbnail */}
-                    <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg border border-white bg-slate-200 shadow-sm">
-                      {cameraActive && localStream ? (
-                        <video
-                          ref={localVideoRef}
-                          autoPlay
-                          playsInline
-                          muted
-                          className="h-full w-full object-cover -scale-x-100"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-600">
-                          You
-                        </div>
-                      )}
-                      <div className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-[10px] text-white">
-                        You
-                      </div>
-                    </div>
-
-                    {/* Other remote participants thumbnail */}
-                    {otherParticipants.map((p) => (
-                      <div
-                        key={p.socketId}
-                        onClick={() => setPinnedSocketId(p.socketId)}
-                        className="relative h-20 w-32 shrink-0 cursor-pointer overflow-hidden rounded-lg border border-white bg-slate-200 shadow-sm transition hover:ring-2 hover:ring-primary"
-                      >
-                        <RemoteVideoTile
-                          participant={p}
-                          onPin={() => setPinnedSocketId(p.socketId)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                /* Balanced Multi-User Grid View */
-                <div
-                  className={`grid w-full h-full gap-3 p-3 pb-24 ${getGridCols(
-                    remoteParticipants.length + 1
-                  )}`}
-                >
-                  {/* Local participant tile */}
-                  <div className="relative flex h-full w-full min-h-[160px] sm:min-h-[220px] items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-slate-200 shadow-md">
-                    {cameraActive && localStream ? (
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="h-full w-full object-cover -scale-x-100"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary text-xl font-semibold">
-                          You
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="absolute bottom-2 left-2 rounded-md bg-black/60 px-2 py-1 text-xs font-medium text-white backdrop-blur-sm z-10 flex items-center gap-1.5">
-                      <span>You</span>
-                      {!micActive && (
-                        <MicOff size={12} className="text-red-400" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Remote participant tiles */}
-                  {remoteParticipants.map((participant) => (
-                    <div
-                      key={participant.socketId}
-                      className="min-h-[160px] sm:min-h-[220px]"
-                    >
-                      <RemoteVideoTile
-                        participant={participant}
-                        onPin={() => setPinnedSocketId(participant.socketId)}
-                        isPinned={false}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
           {/* Floating Controls Bar (centered at bottom) */}
           <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-primary/20 bg-white/70 p-2 shadow-xl backdrop-blur-md sm:gap-3 sm:p-3 z-30">
             {/* Mic Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all ${
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
                 micActive
                   ? "bg-primary/10 text-primary hover:bg-primary/20"
                   : "bg-red-50 text-red-600 hover:bg-red-100"
@@ -640,7 +616,7 @@ function MeetingRoom({
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all ${
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
                 cameraActive
                   ? "bg-primary/10 text-primary hover:bg-primary/20"
                   : "bg-red-50 text-red-600 hover:bg-red-100"
@@ -655,7 +631,7 @@ function MeetingRoom({
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all ${
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
                 isScreenSharing
                   ? "bg-primary text-white hover:bg-primary/90"
                   : "bg-primary/10 text-primary hover:bg-primary/20"
@@ -666,13 +642,28 @@ function MeetingRoom({
               <MonitorUp size={20} />
             </Button>
 
+            {/* Add Friends Section Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
+                isFriendsSheetOpen
+                  ? "bg-primary text-white hover:bg-primary/90"
+                  : "bg-primary/10 text-primary hover:bg-primary/20"
+              }`}
+              onClick={() => setIsFriendsSheetOpen((p) => !p)}
+              title="Friends & Invites"
+            >
+              <UserPlus size={20} />
+            </Button>
+
             <div className="mx-1 h-8 w-px bg-slate-200" />
 
             {/* End Meeting / Leave Action */}
             {isHost ? (
               <Dialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="h-12 rounded-xl px-4 sm:px-6 gap-2 font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm">
+                  <Button className="h-12 rounded-xl px-4 sm:px-6 gap-2 font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm cursor-pointer">
                     <PhoneOff size={18} className="text-white shrink-0" />
                     <span className="text-white font-medium">End meeting</span>
                   </Button>
@@ -714,7 +705,7 @@ function MeetingRoom({
               </Dialog>
             ) : (
               <Button
-                className="h-12 rounded-xl px-4 sm:px-6 gap-2 font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                className="h-12 rounded-xl px-4 sm:px-6 gap-2 font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm cursor-pointer"
                 onClick={handleLeaveMeeting}
               >
                 <LogOut size={18} className="text-white shrink-0" />
@@ -724,6 +715,13 @@ function MeetingRoom({
           </div>
         </div>
       </main>
+
+      {/* Friends & Invites Sheet Drawer */}
+      <MeetingFriendsSheet
+        open={isFriendsSheetOpen}
+        onOpenChange={setIsFriendsSheetOpen}
+        roomId={roomId}
+      />
     </section>
   );
 }

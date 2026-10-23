@@ -6,9 +6,23 @@ import cookieParser from 'cookie-parser';
 import { Request, Response } from 'express';
 
 async function bootstrap() {
+  const allowedOrigins = (process.env.FRONTEND_URL!)
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   const app = await NestFactory.create(AppModule, {
     cors: {
-      origin: process.env.FRONTEND_URL?.split(','),
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        if (process.env.NODE_ENV !== 'production') {
+          if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+            return callback(null, true);
+          }
+        }
+        callback(new Error('Not allowed by CORS'));
+      },
       credentials: true,
     },
   });

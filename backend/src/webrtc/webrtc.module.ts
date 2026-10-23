@@ -7,5 +7,6 @@ import { JwtService } from '@nestjs/jwt';
 @Module({
   imports: [ConfigModule, MeetingModule],
   providers: [WebrtcGateway, JwtService],
+  exports: [WebrtcGateway],
 })
 export class WebrtcModule {}

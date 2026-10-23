@@ -13,6 +13,7 @@ import MeetingMainPage from "./components/webrtc/components/MeetingMainPage";
 import { ProtectedRoute } from "./util/protectedRoutes";
 import ResetPasswordPage from "./pages/auth/ResetPassword.page";
 import GoogleCallbackPage from "./pages/auth/GoogleCallback.page";
+import { FriendsContainer } from "./pages/friends/Friends.container";
 // import Historycontainer from "./pages/history/History.container";
 
 export const queryClient = new QueryClient();
@@ -59,6 +60,10 @@ function App() {
             {
               path: "/meeting/:roomId",
               element: <MeetingMainPage />,
+            },
+            {
+              path: "/friends",
+              element: <FriendsContainer />,
             },
             {
               path: "/report",

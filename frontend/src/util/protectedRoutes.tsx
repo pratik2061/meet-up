@@ -5,14 +5,16 @@ import { Spinner } from "@/components/ui/spinner";
 export const ProtectedRoute = () => {
   const location = useLocation();
 
-  const { data: userData, error, isError, isPending } = useCurrentUser();
+  const { data: userData, error, isError, isPending, isFetching } = useCurrentUser();
 
-  if (isPending) {
+  if (isPending || (isFetching && !userData?.data)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex justify-center items-center lg:text-2xl md:text-xl text-lg">
           <Spinner className="size-7" />{" "}
-          <span className="text-primary px-2 md:block hidden">checking authentication...</span>
+          <span className="text-primary px-2 md:block hidden">
+            checking authentication...
+          </span>
         </div>
       </div>
     );

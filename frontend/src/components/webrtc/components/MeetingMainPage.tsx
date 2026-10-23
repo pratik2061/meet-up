@@ -83,6 +83,7 @@ function MeetingMainPage() {
       onLeave={handleLeave}
       roomId={roomId || activeRoomId}
       isHost={isHost}
+      startedAt={meetingQueryData?.meetingData?.startedAt}
     />
   ) : (
     <MeetingPreview onJoin={handleJoin} isPending={isPending} />

@@ -47,7 +47,12 @@ export const useAuthLogin = () => {
     },
     onError: (error) => {
       if (axios.isAxiosError(error)) {
-        toast.error(error.response?.data.message);
+        const errorMsg = error.response?.data?.message;
+        toast.error(
+          Array.isArray(errorMsg) ? errorMsg[0] : errorMsg || "Login failed",
+        );
+      } else {
+        toast.error("Login failed");
       }
     },
   });

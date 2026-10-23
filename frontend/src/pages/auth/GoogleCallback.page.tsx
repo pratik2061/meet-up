@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { axiosInstance } from "@/util/api/axiosInstance";
 import { Spinner } from "@/components/ui/spinner";
+import { queryClient } from "@/App";
+import { currentUser } from "./services/currentUser";
 
 export default function GoogleCallbackPage() {
   const [searchParams] = useSearchParams();
@@ -22,7 +24,11 @@ export default function GoogleCallbackPage() {
 
     axiosInstance
       .post("/auth/google/exchange", { code })
-      .then(() => {
+      .then(async () => {
+        await queryClient.fetchQuery({
+          queryKey: ["current-user"],
+          queryFn: currentUser,
+        });
         navigate("/dashboard", { replace: true });
       })
       .catch(() => {

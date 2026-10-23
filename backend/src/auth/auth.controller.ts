@@ -31,6 +31,39 @@ export class AuthController {
     private readonly verify: VerifyToken,
   ) { }
 
+  private getCookieOptions(type: 'access' | 'refresh') {
+    const isProd =
+      this.configService.get<string>('NODE_ENV') ===
+      'production';
+    const accessExpires = Number(
+      this.configService.get('ACCESS_EXPIRES_IN'),
+    );
+    const refreshExpires = Number(
+      this.configService.get('REFRESH_EXPIRES_IN'),
+    );
+    const maxAge = (type === 'access' ? accessExpires : refreshExpires) * 1000;
+
+    return {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+      maxAge,
+      path: '/',
+    };
+  }
+
+  private getClearCookieOptions() {
+    const isProd =
+      this.configService.get<string>('NODE_ENV') ===
+      'production';
+    return {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: (isProd ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+    };
+  }
+
   @Post('register')
   async create(@Body() createAuthDto: CreateAuthDto): Promise<{
     message: string;
@@ -47,19 +80,17 @@ export class AuthController {
   ) {
     const response = await this.authService.signIn(loginAuthDto);
 
-    res.cookie('accessToken', response.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: this.configService.get('ACCESS_EXPIRES_IN') * 1000,
-    });
+    res.cookie(
+      'accessToken',
+      response.accessToken,
+      this.getCookieOptions('access'),
+    );
 
-    res.cookie('refreshToken', response.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: this.configService.get('REFRESH_EXPIRES_IN') * 1000,
-    });
+    res.cookie(
+      'refreshToken',
+      response.refreshToken,
+      this.getCookieOptions('refresh'),
+    );
 
     return {
       message: 'login successful',
@@ -69,55 +100,26 @@ export class AuthController {
   @Post('logout')
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
-    const refreshToken = req.cookies['refreshToken'] as string;
+    res.clearCookie('accessToken', this.getClearCookieOptions());
+    res.clearCookie('refreshToken', this.getClearCookieOptions());
 
-    if (!refreshToken) {
-      throw new BadRequestException('refresh token missing,please login');
-    }
-    const convertURIToken = decodeURIComponent(refreshToken);
+    const refreshToken = req.cookies?.['refreshToken'] as string | undefined;
 
-    const userPayload:
-      | {
-        isMatch: boolean;
-        userId: string;
+    if (refreshToken) {
+      try {
+        const convertURIToken = decodeURIComponent(refreshToken);
+        const userPayload = await this.verify.verifyToken(convertURIToken);
+        if (userPayload?.isMatch && userPayload?.userId) {
+          await this.authService.logout(userPayload.userId);
+        }
+      } catch {
+        // Even if token was expired or invalid, cookies are cleared
       }
-      | undefined = await this.verify.verifyToken(convertURIToken);
-
-    if (!userPayload) {
-      throw new BadRequestException('failed to verify token');
     }
-    if (userPayload.isMatch) {
-      const logoutResponse = await this.authService.logout(userPayload.userId);
 
-      if (!logoutResponse || logoutResponse.status === false) {
-        throw new BadRequestException('Failed to logout, please try again.');
-      }
-      res.clearCookie('accessToken', {
-        httpOnly: true,
-        secure:
-          this.configService.get<string>('NODE_ENV') === 'production'
-            ? true
-            : false,
-        sameSite:
-          this.configService.get<string>('NODE_ENV') === 'production'
-            ? 'none'
-            : 'lax',
-      });
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure:
-          this.configService.get<string>('NODE_ENV') === 'production'
-            ? true
-            : false,
-        sameSite:
-          this.configService.get<string>('NODE_ENV') === 'production'
-            ? 'none'
-            : 'lax',
-      });
-      return {
-        message: 'Logout successful',
-      };
-    }
+    return {
+      message: 'Logout successful',
+    };
   }
 
   @Get('refresh')
@@ -125,13 +127,8 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies['refreshToken'] as string;
-    const accessToken = req.cookies['accessToken'] as string;
-    if (accessToken) {
-      throw new BadRequestException(
-        'Access token is still valid, no need to refresh',
-      );
-    }
+    const refreshToken = req.cookies?.['refreshToken'] as string | undefined;
+
     if (!refreshToken) {
       throw new UnauthorizedException('Tokens are missing, Please re-login');
     }
@@ -142,18 +139,11 @@ export class AuthController {
         'failed to generate new access token, please re-login',
       );
     }
-    res.cookie('accessToken', response.accessToken, {
-      httpOnly: true,
-      secure:
-        this.configService.get<string>('NODE_ENV') === 'production'
-          ? true
-          : false,
-      sameSite:
-        this.configService.get<string>('NODE_ENV') === 'production'
-          ? 'none'
-          : 'lax',
-      maxAge: this.configService.get('ACCESS_EXPIRES_IN') * 1000,
-    });
+    res.cookie(
+      'accessToken',
+      response.accessToken,
+      this.getCookieOptions('access'),
+    );
     return {
       message: 'Access token refreshed successfully',
     };
@@ -267,21 +257,17 @@ export class AuthController {
     console.log('[Google Exchange] refreshToken present:', !!tokens.refreshToken, 'length:', tokens.refreshToken?.length);
     console.log('[Google Exchange] accessMaxAge:', accessMaxAge, 'refreshMaxAge:', refreshMaxAge);
 
-    res.cookie('accessToken', tokens.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: accessMaxAge,
-      path: '/',
-    });
+    res.cookie(
+      'accessToken',
+      tokens.accessToken,
+      this.getCookieOptions('access'),
+    );
 
-    res.cookie('refreshToken', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production' ? true : false,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: refreshMaxAge,
-      path: '/',
-    });
+    res.cookie(
+      'refreshToken',
+      tokens.refreshToken,
+      this.getCookieOptions('refresh'),
+    );
 
     return {
       message: 'Google login successful',

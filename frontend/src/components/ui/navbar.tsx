@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 
 const Navbar = () => {
-  const { mutate: logout } = useAuthLogout();
+  const { mutate: logout, isPending } = useAuthLogout();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const NavItem = [
@@ -31,6 +31,8 @@ const Navbar = () => {
         }),
       icon: LogOut,
       color: "text-red-500 hover:text-red-400",
+      isLoading: isPending,
+      loadingText: "Logging out...",
     },
   ];
   return (

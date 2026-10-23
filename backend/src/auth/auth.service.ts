@@ -235,6 +235,15 @@ export class AuthService {
       );
       return userDetail;
     } catch (error) {
+      if (error instanceof Error) {
+        if (
+          error.name === 'JsonWebTokenError' ||
+          error.name === 'TokenExpiredError' ||
+          error.name === 'NotBeforeError'
+        ) {
+          throw new UnauthorizedException('Invalid or expired token');
+        }
+      }
       if (
         error instanceof NotFoundException ||
         error instanceof UnauthorizedException
@@ -288,6 +297,15 @@ export class AuthService {
 
       return updatedUser;
     } catch (error) {
+      if (error instanceof Error) {
+        if (
+          error.name === 'JsonWebTokenError' ||
+          error.name === 'TokenExpiredError' ||
+          error.name === 'NotBeforeError'
+        ) {
+          throw new UnauthorizedException('Invalid or expired token');
+        }
+      }
       if (
         error instanceof NotFoundException ||
         error instanceof UnauthorizedException
