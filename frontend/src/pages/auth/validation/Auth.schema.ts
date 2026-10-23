@@ -5,9 +5,10 @@ export const LoginSchema = z.object({
   password: z
     .string()
     .min(1, "Password is required")
-    .min(8, "password must be at least 8 characters")
+    .min(8, "Password must be between 8 and 50 characters long")
+    .max(50, "Password must be between 8 and 50 characters long")
     .regex(
-      /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+      /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).*$/,
       "Password must contain at least one uppercase letter, one number, and one special character",
     ),
 });
@@ -25,9 +26,10 @@ export const ResetPasswordSchema = z
     password: z
       .string()
       .min(1, "Password is required")
-      .min(8, "Password must be at least 8 characters")
+      .min(8, "Password must be between 8 and 50 characters long")
+      .max(50, "Password must be between 8 and 50 characters long")
       .regex(
-        /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+        /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).*$/,
         "Password must contain at least one uppercase letter, one number, and one special character",
       ),
     confirmPassword: z.string().min(1, "Please confirm your password"),
