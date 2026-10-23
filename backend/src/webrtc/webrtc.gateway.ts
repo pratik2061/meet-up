@@ -152,8 +152,11 @@ export class WebrtcGateway
         throw new BadRequestException('Invalid meeting or user');
       }
       const usersInRoom = this.server.sockets.adapter.rooms.get(roomId);
-      if (usersInRoom && usersInRoom.size >= 2) {
-        throw new BadRequestException('Meeting room is full');
+      const MAX_PARTICIPANTS = 15;
+      if (usersInRoom && usersInRoom.size >= MAX_PARTICIPANTS) {
+        throw new BadRequestException(
+          `Meeting room is full (max ${MAX_PARTICIPANTS} participants)`,
+        );
       }
       const existingSocketIds = usersInRoom ? [...usersInRoom] : [];
       if (existingSocketIds.includes(client.id)) {
@@ -164,9 +167,18 @@ export class WebrtcGateway
 
       await this.meetingService.markUserJoined(roomId, user.id);
 
+      const existingParticipants = existingSocketIds.map((id) => {
+        const sock = this.server.sockets.sockets.get(id);
+        return {
+          socketId: id,
+          user: sock?.data?.user,
+        };
+      });
+
       client.emit('room-users', {
         roomId,
         user: existingSocketIds,
+        users: existingParticipants,
       });
 
       client.to(roomId).emit('user-joined', {
@@ -216,6 +228,7 @@ export class WebrtcGateway
       }
       this.server.to(data.targetSocketId).emit('webrtc-offer', {
         fromSocketId: client.id,
+        user: client.data.user,
         offer: data.offer,
       });
     } catch (error) {
@@ -258,6 +271,7 @@ export class WebrtcGateway
 
     this.server.to(data.targetSocketId).emit('webrtc-answer', {
       fromSocketId: client.id,
+      user: client.data.user,
       answer: data.answer,
     });
   }

@@ -29,7 +29,6 @@ export class MeetingController {
     @Req() req: Request,
   ) {
     const user = req.user as TokenPayLoad;
-    console.log(user)
     if (!user || !user.id || !user.email || !user.createdAt) {
       throw new UnauthorizedException('User not authenticated, please log in');
     }
