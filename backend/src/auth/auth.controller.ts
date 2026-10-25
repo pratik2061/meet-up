@@ -10,7 +10,11 @@ import {
   Patch,
   UnauthorizedException,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { multerMemoryConfig } from 'src/upload/multer.config';
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -65,11 +69,15 @@ export class AuthController {
   }
 
   @Post('register')
-  async create(@Body() createAuthDto: CreateAuthDto): Promise<{
+  @UseInterceptors(FileInterceptor('avatar', multerMemoryConfig))
+  async create(
+    @Body() createAuthDto: CreateAuthDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ): Promise<{
     message: string;
     user: Partial<User>;
   }> {
-    return await this.authService.create(createAuthDto);
+    return await this.authService.create(createAuthDto, file);
   }
 
   @Post('login')
@@ -169,9 +177,11 @@ export class AuthController {
   }
 
   @Patch('profile')
+  @UseInterceptors(FileInterceptor('avatar', multerMemoryConfig))
   async updateProfile(
     @Req() req: Request,
     @Body() updateAuthDto: UpdateProfileDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     const accessToken = req.cookies['accessToken'] as string;
     if (!accessToken) {
@@ -183,6 +193,7 @@ export class AuthController {
     const response = await this.authService.updateProfile(
       convertURIToken,
       updateAuthDto,
+      file,
     );
     return {
       message: 'Profile updated successfully',

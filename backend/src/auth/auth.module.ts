@@ -10,11 +10,13 @@ import { VerifyToken } from 'src/utils/verify-token';
 import { JwtService } from '@nestjs/jwt';
 import { RecentLogModule } from 'src/recent-log/recent-log.module';
 import { GoogleStrategy } from 'src/strategy/google.strategy';
+import { UploadModule } from 'src/upload/upload.module';
 
 @Module({
   imports: [
     ConfigModule,
     RecentLogModule,
+    UploadModule,
     MongooseModule.forFeature([
       {
         name: 'User',

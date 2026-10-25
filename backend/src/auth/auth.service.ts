@@ -20,6 +20,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { RecentLogService } from 'src/recent-log/recent-log.service';
 import crypto from 'crypto'
 import { MailService } from 'src/resend/resend.service';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class AuthService {
@@ -31,10 +32,14 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly recentLogService: RecentLogService,
-    private readonly mailService: MailService
+    private readonly mailService: MailService,
+    private readonly uploadService: UploadService,
   ) { }
 
-  async create(createAuthDto: CreateAuthDto): Promise<{
+  async create(
+    createAuthDto: CreateAuthDto,
+    file?: Express.Multer.File,
+  ): Promise<{
     message: string;
     user: Partial<User>;
   }> {
@@ -46,10 +51,18 @@ export class AuthService {
       if (checkUser) {
         throw new BadRequestException('User with this email already exists');
       }
+
+      let avatarUrl: string | undefined;
+      if (file) {
+        const uploadResult = await this.uploadService.uploadToR2(file);
+        avatarUrl = uploadResult.url;
+      }
+
       const hashedPassword = await bcrypt.hash(createAuthDto.password, 10);
       const createUser = await this.UserModel.create({
         ...createAuthDto,
         password: hashedPassword,
+        avatarUrl,
       });
       const { password: _password, ...userData } = createUser.toObject();
 
@@ -259,6 +272,7 @@ export class AuthService {
   async updateProfile(
     token: string,
     updateData: { fullName?: string; phoneNumber?: string; address?: string },
+    file?: Express.Multer.File,
   ) {
     try {
       const verifyAccessToken: TokenPayLoad = this.jwtService.verify(token, {
@@ -268,12 +282,19 @@ export class AuthService {
         throw new UnauthorizedException('Invalid access token');
       }
 
+      let avatarUrl: string | undefined;
+      if (file) {
+        const uploadResult = await this.uploadService.uploadToR2(file);
+        avatarUrl = uploadResult.url;
+      }
+
       const updatedUser = await this.UserModel.findByIdAndUpdate(
         verifyAccessToken.id,
         {
           ...(updateData.fullName && { fullName: updateData.fullName }),
           ...(updateData.phoneNumber && { phoneNumber: updateData.phoneNumber }),
           ...(updateData.address && { address: updateData.address }),
+          ...(avatarUrl && { avatarUrl }),
         },
         { returnDocument: 'after' },
       );
@@ -286,7 +307,7 @@ export class AuthService {
         `user:${updatedUser.id}`,
         JSON.stringify(updatedUser),
         'EX',
-        Number(this.configService.get('REDIS_TTL') || 3600),
+        Number(this.configService.get('REDIS_TTL')!),
       );
 
       await this.recentLogService.createLog(
@@ -402,6 +423,15 @@ export class AuthService {
       throw new BadRequestException('No email provided by Google');
     }
 
+    let avatarUrl = googleUser.avatarUrl;
+    if (googleUser.avatarUrl) {
+      const highResUrl = googleUser.avatarUrl.replace(/=s\d+(-c)?$/, '=s400-c');
+      const uploadResult = await this.uploadService.uploadFromUrl(highResUrl);
+      if (uploadResult?.url) {
+        avatarUrl = uploadResult.url;
+      }
+    }
+
     // Check if user already exists
     let user = await this.UserModel.findOne({ email: googleUser.email });
 
@@ -411,7 +441,7 @@ export class AuthService {
         email: googleUser.email,
         fullName: googleUser.fullName,
         googleId: googleUser.googleId,
-        avatarUrl: googleUser.avatarUrl,
+        avatarUrl,
         provider: AuthProvider.GOOGLE,
       });
 
@@ -420,13 +450,19 @@ export class AuthService {
         'User Google Signup',
         'User registered via Google OAuth',
       );
-    } else if (!user.googleId) {
-      // Link existing account with googleId if it matches the email
-      user.googleId = googleUser.googleId;
-      if (googleUser.avatarUrl && !user.avatarUrl) {
-        user.avatarUrl = googleUser.avatarUrl;
+    } else {
+      let needsSave = false;
+      if (!user.googleId) {
+        user.googleId = googleUser.googleId;
+        needsSave = true;
       }
-      await user.save();
+      if (!user.avatarUrl && avatarUrl) {
+        user.avatarUrl = avatarUrl;
+        needsSave = true;
+      }
+      if (needsSave) {
+        await user.save();
+      }
     }
 
     //Generate tokens
@@ -463,7 +499,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
- 
+
   async storeGoogleAuthCode(tokens: {
     accessToken: string;
     refreshToken: string;

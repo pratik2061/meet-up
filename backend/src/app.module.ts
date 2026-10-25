@@ -12,6 +12,7 @@ import { ReportModule } from './report/report.module';
 import { MailModule } from './resend/resend.module';
 import { MailService } from './resend/resend.service';
 import { FriendModule } from './friend/friend.module';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -43,6 +44,8 @@ import { FriendModule } from './friend/friend.module';
     MailModule,
 
     FriendModule,
+
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService, MailService],
