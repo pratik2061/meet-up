@@ -5,9 +5,17 @@ import type { UpdateProfilePayload } from "../types/profile.types";
 export const updateProfile = async (
   payload: UpdateProfilePayload,
 ): Promise<ApiResponse<LoginData>> => {
+  const formData = new FormData();
+  if (payload.fullName) formData.append("fullName", payload.fullName);
+  if (payload.phoneNumber) formData.append("phoneNumber", payload.phoneNumber);
+  if (payload.address) formData.append("address", payload.address);
+  if (payload.avatar) {
+    formData.append("avatar", payload.avatar);
+  }
+
   const res = await axiosInstance.patch<ApiResponse<LoginData>>(
     "/auth/profile",
-    payload,
+    formData,
   );
   return res.data;
 };

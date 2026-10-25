@@ -321,10 +321,8 @@ function MeetingRoom({
               </div>
             </DialogContent>
           </Dialog>
-          </div>
-        {/* Right Section: Timer & Participant Count Badge */}
+        </div>
         <div className="flex items-center gap-2">
-          {/* Meeting Timer */}
           <div
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 shadow-sm"
             title="Meeting duration"
@@ -335,7 +333,6 @@ function MeetingRoom({
             </span>
           </div>
 
-          {/* Participant Count Badge */}
           <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-medium text-slate-700 shadow-sm">
             <Users size={15} className="text-primary" />
             <span>
@@ -346,10 +343,8 @@ function MeetingRoom({
         </div>
       </header>
 
-      {/* Main Video Viewport */}
       <main className="relative flex min-h-0 flex-1 items-center justify-center">
         <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
-          {/* Active Screen Share View (Google Meet style presentation) */}
           {isScreenSharing && screenStream ? (
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden bg-slate-900">
               <video
@@ -365,7 +360,6 @@ function MeetingRoom({
                 <span>You are presenting your screen</span>
               </div>
 
-              {/* Remote participants thumbnail strip if any participants exist */}
               {remoteParticipants.length > 0 && (
                 <div className="absolute top-4 right-4 flex max-w-[80%] gap-2 overflow-x-auto p-1.5 rounded-xl bg-white/70 backdrop-blur-md border border-slate-200 shadow-lg z-20">
                   {remoteParticipants.map((p) => (
@@ -379,7 +373,6 @@ function MeetingRoom({
                 </div>
               )}
 
-              {/* Local Stream PiP */}
               {localStream && (
                 <div className="absolute bottom-5 right-5 overflow-hidden rounded-xl border-2 border-white bg-slate-200 shadow-xl z-20">
                   {cameraActive ? (
@@ -407,7 +400,6 @@ function MeetingRoom({
             </div>
           ) : (
             <>
-              {/* Case 0: Waiting for others (0 remote participants) */}
               {remoteParticipants.length === 0 && (
                 <div className="flex flex-col items-center justify-center gap-4 text-center px-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -423,7 +415,6 @@ function MeetingRoom({
                     </p>
                   </div>
 
-                  {/* Quick Action Buttons in Empty State */}
                   <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
                     <Button
                       onClick={() => setIsFriendsSheetOpen(true)}
@@ -450,7 +441,6 @@ function MeetingRoom({
                 </div>
               )}
 
-              {/* Case 1: 1-on-1 meeting (exactly 1 remote participant) */}
               {remoteParticipants.length === 1 && (
                 <div className="relative h-full w-full">
                   <video
@@ -467,7 +457,6 @@ function MeetingRoom({
                 </div>
               )}
 
-              {/* Local Stream Picture-in-Picture for 0 or 1 remote participant */}
               {remoteParticipants.length <= 1 && localStream && (
                 <div className="absolute bottom-5 right-5 overflow-hidden rounded-xl border-2 border-white bg-slate-200 shadow-xl z-20">
                   {cameraActive ? (
@@ -492,12 +481,9 @@ function MeetingRoom({
                   </div>
                 </div>
               )}
-
-              {/* Case 2: Multi-user meeting (2+ remote participants) */}
               {remoteParticipants.length >= 2 && (
                 <>
                   {pinnedParticipant ? (
-                    /* Pinned Focus View */
                     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
                       <RemoteVideoTile
                         participant={pinnedParticipant}
@@ -505,9 +491,7 @@ function MeetingRoom({
                         isPinned={true}
                       />
 
-                      {/* Top-Right Mini Stream Ribbon */}
                       <div className="absolute top-4 right-4 flex max-w-[85%] gap-2 overflow-x-auto p-1.5 rounded-xl bg-white/70 backdrop-blur-md border border-slate-200 shadow-lg z-20">
-                        {/* Local participant thumbnail */}
                         <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg border border-white bg-slate-200 shadow-sm">
                           {cameraActive && localStream ? (
                             <video
@@ -527,7 +511,6 @@ function MeetingRoom({
                           </div>
                         </div>
 
-                        {/* Other remote participants thumbnail */}
                         {otherParticipants.map((p) => (
                           <div
                             key={p.socketId}
@@ -543,13 +526,11 @@ function MeetingRoom({
                       </div>
                     </div>
                   ) : (
-                    /* Balanced Multi-User Grid View */
                     <div
                       className={`grid w-full h-full gap-3 p-3 pb-24 ${getGridCols(
                         remoteParticipants.length + 1
                       )}`}
                     >
-                      {/* Local participant tile */}
                       <div className="relative flex h-full w-full min-h-[160px] sm:min-h-[220px] items-center justify-center overflow-hidden rounded-xl border-2 border-white bg-slate-200 shadow-md">
                         {cameraActive && localStream ? (
                           <video
@@ -575,7 +556,6 @@ function MeetingRoom({
                         </div>
                       </div>
 
-                      {/* Remote participant tiles */}
                       {remoteParticipants.map((participant) => (
                         <div
                           key={participant.socketId}
@@ -595,62 +575,53 @@ function MeetingRoom({
             </>
           )}
 
-          {/* Floating Controls Bar (centered at bottom) */}
           <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-primary/20 bg-white/70 p-2 shadow-xl backdrop-blur-md sm:gap-3 sm:p-3 z-30">
-            {/* Mic Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
-                micActive
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${micActive
                   ? "bg-primary/10 text-primary hover:bg-primary/20"
                   : "bg-red-50 text-red-600 hover:bg-red-100"
-              }`}
+                }`}
               onClick={toggleMic}
               title={micActive ? "Mute microphone" : "Unmute microphone"}
             >
               {micActive ? <Mic size={20} /> : <MicOff size={20} />}
             </Button>
 
-            {/* Camera Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
-                cameraActive
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${cameraActive
                   ? "bg-primary/10 text-primary hover:bg-primary/20"
                   : "bg-red-50 text-red-600 hover:bg-red-100"
-              }`}
+                }`}
               onClick={toggleCamera}
               title={cameraActive ? "Turn off camera" : "Turn on camera"}
             >
               {cameraActive ? <Video size={20} /> : <VideoOff size={20} />}
             </Button>
 
-            {/* Screen Share Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
-                isScreenSharing
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${isScreenSharing
                   ? "bg-primary text-white hover:bg-primary/90"
                   : "bg-primary/10 text-primary hover:bg-primary/20"
-              }`}
+                }`}
               onClick={toggleScreenShare}
               title={isScreenSharing ? "Stop sharing screen" : "Share screen"}
             >
               <MonitorUp size={20} />
             </Button>
 
-            {/* Add Friends Section Toggle */}
             <Button
               variant="ghost"
               size="icon"
-              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${
-                isFriendsSheetOpen
+              className={`h-12 w-12 rounded-xl transition-all cursor-pointer ${isFriendsSheetOpen
                   ? "bg-primary text-white hover:bg-primary/90"
                   : "bg-primary/10 text-primary hover:bg-primary/20"
-              }`}
+                }`}
               onClick={() => setIsFriendsSheetOpen((p) => !p)}
               title="Friends & Invites"
             >
@@ -659,7 +630,6 @@ function MeetingRoom({
 
             <div className="mx-1 h-8 w-px bg-slate-200" />
 
-            {/* End Meeting / Leave Action */}
             {isHost ? (
               <Dialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
                 <DialogTrigger asChild>
@@ -716,7 +686,6 @@ function MeetingRoom({
         </div>
       </main>
 
-      {/* Friends & Invites Sheet Drawer */}
       <MeetingFriendsSheet
         open={isFriendsSheetOpen}
         onOpenChange={setIsFriendsSheetOpen}

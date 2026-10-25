@@ -49,7 +49,13 @@ export const ProfileHero = ({ user, onEditClick }: ProfileHeroProps) => {
           <div className="relative shrink-0">
             <div className="size-20 sm:size-22 rounded-2xl p-0.5 bg-gradient-to-tr from-primary/30 via-indigo-500/20 to-primary/10 border border-primary/20 shadow-xs">
               <div className="size-full rounded-[14px] overflow-hidden bg-muted/40 flex items-center justify-center">
-                {user.profileImageId ? (
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.fullName}
+                    className="size-full object-cover"
+                  />
+                ) : user.profileImageId ? (
                   <img
                     src={DefaultProfileImage}
                     alt={user.fullName}

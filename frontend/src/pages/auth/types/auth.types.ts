@@ -4,6 +4,7 @@ export interface LoginData {
   email: string;
   phoneNumber: string;
   address: string;
+  avatarUrl?: string;
   profileImageId: string | null;
   role: string;
   createdAt: string;

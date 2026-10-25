@@ -7,14 +7,26 @@ export interface RegisterRequestPayload {
   phoneNumber: string;
   address: string;
   password: string;
+  avatar?: File | null;
 }
 
 export const register = async (
   data: RegisterRequestPayload,
 ): Promise<ApiResponse<LoginData>> => {
+  const formData = new FormData();
+  formData.append("fullName", data.fullName);
+  formData.append("email", data.email);
+  formData.append("phoneNumber", data.phoneNumber);
+  formData.append("address", data.address);
+  formData.append("password", data.password);
+
+  if (data.avatar) {
+    formData.append("avatar", data.avatar);
+  }
+
   const res = await axiosInstance.post<ApiResponse<LoginData>>(
     "/auth/register",
-    data,
+    formData,
   );
   return res.data;
 };

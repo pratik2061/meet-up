@@ -4,6 +4,7 @@ export interface UpdateProfilePayload {
   fullName?: string;
   phoneNumber?: string;
   address?: string;
+  avatar?: File | null;
 }
 
 export interface UserPreferences {

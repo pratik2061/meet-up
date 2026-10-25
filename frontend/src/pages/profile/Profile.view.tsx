@@ -12,6 +12,7 @@ import { ProfileSecurityTab } from "./components/ProfileSecurityTab";
 import { ProfileEditModal } from "./components/ProfileEditModal";
 import type {
   ProfileTabType,
+  UpdateProfilePayload,
   UserPreferences,
   UserProfile,
 } from "./types/profile.types";
@@ -24,11 +25,7 @@ interface ProfileViewProps {
   isEditModalOpen: boolean;
   onOpenEditModal: () => void;
   onCloseEditModal: () => void;
-  onUpdateProfile: (data: {
-    fullName: string;
-    phoneNumber: string;
-    address: string;
-  }) => void;
+  onUpdateProfile: (data: UpdateProfilePayload) => void;
   isUpdatingProfile: boolean;
   preferences: UserPreferences;
   onUpdatePreference: <K extends keyof UserPreferences>(

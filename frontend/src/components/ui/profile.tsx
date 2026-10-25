@@ -47,7 +47,13 @@ export const Profile = ({ data }: { data: ProfileProps[] }) => {
             className="w-10 h-10 flex items-center justify-center overflow-hidden rounded-full bg-gradient-to-tr from-primary/20 to-primary/5 text-primary font-semibold text-sm shadow-xs focus:outline-none"
             aria-label="User menu"
           >
-            {user?.profileImageId ? (
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName || "User profile"}
+                className="w-full h-full object-cover"
+              />
+            ) : user?.profileImageId ? (
               <img
                 src={DefaultProfileImage}
                 alt={user.fullName || "User profile"}

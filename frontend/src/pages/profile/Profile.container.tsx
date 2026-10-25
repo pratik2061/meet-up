@@ -4,6 +4,7 @@ import { useUpdateProfile } from "./hooks/useUpdateProfile";
 import { ProfileView } from "./Profile.view";
 import type {
   ProfileTabType,
+  UpdateProfilePayload,
   UserPreferences,
 } from "./types/profile.types";
 import toast from "react-hot-toast";
@@ -67,11 +68,7 @@ export const ProfileContainer = () => {
     toast.success("Preferences reset to defaults!");
   };
 
-  const handleUpdateProfile = (data: {
-    fullName: string;
-    phoneNumber: string;
-    address: string;
-  }) => {
+  const handleUpdateProfile = (data: UpdateProfilePayload) => {
     updateProfileMutation.mutate(data, {
       onSuccess: () => {
         setIsEditModalOpen(false);
