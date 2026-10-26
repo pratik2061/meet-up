@@ -1,5 +1,5 @@
 import { LogOut, User } from "lucide-react";
-import { Notification } from "./notification";
+// import { Notification } from "./notification";
 import { Profile } from "./profile";
 import { SidebarTrigger } from "./sidebar";
 import { useAuthLogout } from "@/util/api/api-hooks/use-auth";
@@ -41,7 +41,7 @@ const Navbar = () => {
         <SidebarTrigger className="md:hidden" />
 
         <div className="flex items-center ">
-          <Notification />
+          {/* <Notification /> */}
           <Profile data={NavItem} />
         </div>
       </div>
