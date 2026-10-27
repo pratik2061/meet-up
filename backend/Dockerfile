@@ -8,11 +8,9 @@ COPY . /meetup-backend
 
 WORKDIR /meetup-backend
 
-RUN npm install pnpm -g
+RUN npm install
 
-RUN pnpm -v
-
-RUN pnpm install
+RUN npm -v
 
 EXPOSE 3000
 
