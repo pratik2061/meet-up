@@ -1,8 +1,3 @@
-import {
-  StatsCard,
-  StatsCardSkeleton,
-  type statsCardProps,
-} from "@/components/ui/stats-card";
 import { DashboardStatsChart } from "./components/DashboardStatsChart";
 import DashboardQuickAction from "./components/DashboardQuickAction";
 import { DashboardRecentTable } from "./components/DashboardRecentTable";
@@ -30,9 +25,7 @@ interface DashboardViewProps {
   isLogsLoading?: boolean;
   isLogsFetching?: boolean;
   onRefreshLogs?: () => void;
-  statsData?: statsCardProps[];
   activityData?: ReportActivityItem[];
-  isStatsLoading?: boolean;
   isActivityLoading?: boolean;
 }
 
@@ -52,30 +45,11 @@ export const DashboardView = ({
   isLogsLoading,
   isLogsFetching,
   onRefreshLogs,
-  statsData = [],
   activityData,
   isActivityLoading,
-  isStatsLoading = false,
 }: DashboardViewProps) => {
   return (
     <section className="lg:px-6 px-4 lg:py-4 py-2 space-y-2 md:space-y-4 lg:space-y-6">
-      {/* stats card div */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6">
-        {isStatsLoading
-          ? Array.from({ length: 3 }).map((_, i) => (
-              <StatsCardSkeleton key={`stats-skeleton-${i}`} />
-            ))
-          : statsData.map((v, i) => (
-              <StatsCard
-                key={`${v.title}-${i}`}
-                title={v.title}
-                value={v.value}
-                icon={v.icon}
-                change={v.change}
-                positive={v.positive}
-              />
-            ))}
-      </div>
 
       {/* chart and Quick action div  */}
       <div className="w-full py-4 px-4 grid grid-cols-1 md:grid-cols-[70%_auto] gap-2 md:gap-4">

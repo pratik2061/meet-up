@@ -9,6 +9,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { FileChartColumn, Home, TvMinimal, Users } from "lucide-react";
+import { IoVideocam } from "react-icons/io5";
 import { Link, useLocation } from "react-router-dom";
 import { useGetFriendRequests } from "@/util/api/api-hooks/use-friends";
 
@@ -50,11 +51,19 @@ export function AppSidebar() {
       collapsible="icon"
       className=" text-[#1f2937] border-r border-[#e2e8e4]"
     >
-      <SidebarHeader>
-        <div className="flex items-center justify-between w-full mb-4 mt-2 ">
-          <span className="bg-card text-3xl font-semibold text-primary group-data-[collapsible='icon']:hidden">
-            MeetUp
-          </span>
+      <SidebarHeader className="py-4">
+        <div className="flex items-center justify-center w-full">
+          <Link
+            to="/dashboard"
+            className="flex items-center justify-center gap-2.5 transition-opacity hover:opacity-90"
+          >
+            <div className="p-2 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <IoVideocam className="size-6 text-primary" />
+            </div>
+            <span className="text-2xl font-bold tracking-tight text-primary group-data-[collapsible='icon']:hidden">
+              MeetUp
+            </span>
+          </Link>
         </div>
       </SidebarHeader>
       <SidebarContent>

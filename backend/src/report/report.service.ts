@@ -107,7 +107,8 @@ export class ReportService {
       createdAt: { $gte: startDate, $lte: endDate },
     };
 
-    if (scope === 'user' && userId) {
+    const effectiveScope = scope || 'user';
+    if (effectiveScope === 'user' && userId) {
       const userObjectId = Types.ObjectId.isValid(userId)
         ? new Types.ObjectId(userId)
         : userId;
@@ -175,6 +176,8 @@ export class ReportService {
       const { startDate, endDate, prevStartDate, prevEndDate } =
         this.parseDateRange(query.startDate, query.endDate);
 
+      const effectiveScope = query.scope || 'user';
+
       // Total users count
       const totalUsers = await this.userModel.countDocuments();
       const currentPeriodUsers = await this.userModel.countDocuments({
@@ -192,13 +195,13 @@ export class ReportService {
       const currentMeetingFilter = this.buildMeetingScopeFilter(
         startDate,
         endDate,
-        query.scope,
+        effectiveScope,
         userId,
       );
       const prevMeetingFilter = this.buildMeetingScopeFilter(
         prevStartDate,
         prevEndDate,
-        query.scope,
+        effectiveScope,
         userId,
       );
 
@@ -212,7 +215,7 @@ export class ReportService {
       const ongoingFilter: Record<string, any> = {
         meetingStatus: MeetingStatus.ONGOING,
       };
-      if (query.scope === 'user' && userId) {
+      if (effectiveScope === 'user' && userId) {
         const userObjectId = Types.ObjectId.isValid(userId)
           ? new Types.ObjectId(userId)
           : userId;
@@ -242,14 +245,18 @@ export class ReportService {
 
       // Stats cards array formatted to directly plug into frontend StatsCard
       const statsCards = [
-        {
-          metric: 'totalUsers',
-          title: 'Total users',
-          value: new Intl.NumberFormat('en-US').format(totalUsers),
-          rawValue: totalUsers,
-          change: userChange.change,
-          positive: userChange.positive,
-        },
+        ...(effectiveScope === 'all'
+          ? [
+              {
+                metric: 'totalUsers',
+                title: 'Total users',
+                value: new Intl.NumberFormat('en-US').format(totalUsers),
+                rawValue: totalUsers,
+                change: userChange.change,
+                positive: userChange.positive,
+              },
+            ]
+          : []),
         {
           metric: 'totalMeetings',
           title: 'Total Meetings',
@@ -328,7 +335,8 @@ export class ReportService {
         createdAt: { $gte: activityStartDate, $lte: endDate },
       };
 
-      if (query.scope === 'user' && userId) {
+      const effectiveScope = query.scope || 'user';
+      if (effectiveScope === 'user' && userId) {
         const userObjectId = Types.ObjectId.isValid(userId)
           ? new Types.ObjectId(userId)
           : userId;
@@ -449,7 +457,8 @@ export class ReportService {
         createdAt: { $gte: startDate, $lte: endDate },
       };
 
-      if (query.scope === 'user' && userId) {
+      const effectiveScope = query.scope || 'user';
+      if (effectiveScope === 'user' && userId) {
         const userObjectId = Types.ObjectId.isValid(userId)
           ? new Types.ObjectId(userId)
           : userId;
@@ -551,7 +560,8 @@ export class ReportService {
         createdAt: { $gte: startDate, $lte: endDate },
       };
 
-      if (query.scope === 'user' && userId) {
+      const effectiveScope = query.scope || 'user';
+      if (effectiveScope === 'user' && userId) {
         const userObjectId = Types.ObjectId.isValid(userId)
           ? new Types.ObjectId(userId)
           : userId;

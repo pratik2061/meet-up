@@ -1,5 +1,4 @@
 import { useMemo, useState } from "react";
-import { HiUsers } from "react-icons/hi2";
 import { GiVideoConference } from "react-icons/gi";
 import { PiPresentation } from "react-icons/pi";
 import { IoCheckmarkDoneCircleOutline } from "react-icons/io5";
@@ -15,13 +14,6 @@ import type { statsCardProps } from "@/components/ui/stats-card";
 import type { ReportQueryParams } from "./types/report-types";
 
 const fallbackStatsData: statsCardProps[] = [
-  {
-    title: "Total users",
-    value: "0",
-    icon: HiUsers,
-    change: "0% from last period",
-    positive: true,
-  },
   {
     title: "Total Meetings",
     value: "0",
@@ -56,6 +48,7 @@ function Reportcontainer() {
     return {
       startDate: dateRange?.from ? dateRange.from.toISOString() : undefined,
       endDate: dateRange?.to ? dateRange.to.toISOString() : undefined,
+      scope: "user",
     };
   }, [dateRange]);
 
@@ -77,24 +70,24 @@ function Reportcontainer() {
       return fallbackStatsData;
     }
 
-    return overviewResponse.summary.statsCards.map((card) => {
-      let icon = GiVideoConference;
-      if (card.metric === "totalUsers") {
-        icon = HiUsers;
-      } else if (card.metric === "ongoingMeetings") {
-        icon = PiPresentation;
-      } else if (card.metric === "completedMeetings") {
-        icon = IoCheckmarkDoneCircleOutline;
-      }
+    return overviewResponse.summary.statsCards
+      .filter((card) => card.metric !== "totalUsers")
+      .map((card) => {
+        let icon = GiVideoConference;
+        if (card.metric === "ongoingMeetings") {
+          icon = PiPresentation;
+        } else if (card.metric === "completedMeetings") {
+          icon = IoCheckmarkDoneCircleOutline;
+        }
 
-      return {
-        title: card.title,
-        value: card.value,
-        icon,
-        change: card.change,
-        positive: card.positive,
-      };
-    });
+        return {
+          title: card.title,
+          value: card.value,
+          icon,
+          change: card.change,
+          positive: card.positive,
+        };
+      });
   }, [overviewResponse]);
 
   const dateRangeLabel = useMemo(() => {
