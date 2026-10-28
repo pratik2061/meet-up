@@ -1,4 +1,4 @@
-name: meetuup backend CI/CD workflow
+name: meet-up backend CI/CD workflow
 
 on: 
   push:
