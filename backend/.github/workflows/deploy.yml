@@ -1,0 +1,26 @@
+name: meetuup backend CI/CD workflow
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy: 
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: deploy via ssh
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{secrets.SSH_HOST_IP}}
+          username: ${{secrets.SSH_USERNAME}}
+          key: ${{secrets.SSH_PRIVATE_KEY}}
+          scripts: |
+            cd /var/www/meet-up/backend
+            git pull
+            sudo docker compose down
+            sudo docker compose up -d --build
