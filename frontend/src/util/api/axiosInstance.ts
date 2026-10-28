@@ -73,10 +73,14 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError);
         // Refresh token is also invalid or expired
-        if (
-          window.location.pathname !== "/login" &&
-          window.location.pathname !== "/signup"
-        ) {
+        const PUBLIC_ROUTES = [
+          "/",
+          "/login",
+          "/signup",
+          "/reset-password",
+          "/auth/callback",
+        ];
+        if (!PUBLIC_ROUTES.includes(window.location.pathname)) {
           window.location.href = "/login";
         }
 

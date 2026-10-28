@@ -97,7 +97,9 @@ export class AuthService {
       if (!user) {
         throw new NotFoundException('User with this email does not exist');
       }
-
+      if (user.provider === AuthProvider.GOOGLE) {
+        throw new UnauthorizedException("User is registered with Google, Please login with Google")
+      }
       const isPasswordValid = await bcrypt.compare(
         loginAuthDto.password,
         user.password!,
