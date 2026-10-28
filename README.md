@@ -1,7 +1,8 @@
 # 🎙️ Meet-Up
 
-> A modern, real-time video conferencing and collaboration platform designed with a cozy user experience, powered by **WebRTC**, **Socket.IO**, **NestJS**, and **React 19**.
+> A modern, real-time video conferencing and collaboration platform designed with a cozy user experience, powered by **LiveKit SFU (Selective Forwarding Unit)**, **WebRTC**, **Socket.IO**, **NestJS**, and **React 19**.
 
+[![LiveKit SFU](https://img.shields.io/badge/LiveKit-SFU_WebRTC-002B36?style=flat&logo=webrtc&logoColor=white)](https://livekit.io/)
 [![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=flat&logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![React 19](https://img.shields.io/badge/React_19-61DAFB?style=flat&logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -41,19 +42,19 @@
 
 ## 🔭 Overview
 
-**Meet-Up** is a full-stack, real-time video conferencing web application built for seamless communication and collaboration. It features peer-to-peer audio and video streaming via **WebRTC** with a **Socket.IO** signaling gateway, customizable meeting spaces, real-time user status, integrated friend system with live in-meeting invites, interactive dashboards, activity logging, and exportable meeting reports.
+**Meet-Up** is a full-stack, real-time video conferencing web application built for seamless communication and high-scalability collaboration. It features a modern **Selective Forwarding Unit (SFU)** media architecture powered by **LiveKit**, drastically cutting client bandwidth and CPU usage compared to traditional mesh WebRTC. Paired with a **NestJS** backend for JWT room token minting and meeting governance, **Socket.IO** for live signaling and friend notifications, and a responsive **React 19** frontend, Meet-Up delivers crystal-clear audio/video, screen sharing, customizable meeting spaces, live friend invitations, interactive dashboards, and meeting reports.
 
 ---
 
 ## ✨ Key Features
 
-- **Peer-to-Peer Video & Audio**:
-  - Ultra-low latency audio/video communication via WebRTC.
-  - Multi-candidate STUN/TURN fallback (Google STUN + OpenRelay TURN).
-  - Dynamic media device controls (camera toggle, mic mute/unmute).
-  - Screen sharing with seamless track replacement.
-  - Active participant pin/unpin focus views.
-  - Room occupancy caps (supports up to 15 concurrent participants per room).
+- **SFU Video & Audio Architecture (LiveKit & WebRTC)**:
+  - **Selective Forwarding Unit (SFU)**: Each participant uploads their media tracks once to the LiveKit SFU server, which selectively routes streams to other participants—eliminating the $O(N^2)$ bandwidth bottleneck of mesh WebRTC.
+  - **Cryptographic Access Tokens**: Room joins are guarded by cryptographically signed JWT tokens generated via `livekit-server-sdk` with granular permissions (`roomJoin`, `canPublish`, `canSubscribe`, `roomAdmin`).
+  - **Dynamic Media Device Controls**: Instant camera toggle, mic mute/unmute, and local track lifecycle management.
+  - **Screen Sharing**: High-resolution screen and window sharing with dedicated track publishing.
+  - **Active Participant Focus & Pinning**: Focus on a designated speaker or presenter with interactive pin/unpin controls.
+  - **Room Scalability & Quality Adaptation**: Scalable multi-participant rooms with dynamic track subscription and low latency.
 
 - **Meeting Management**:
   - Instant room creation with randomized, human-readable codes (`xxxx-xxxx`).
@@ -91,14 +92,19 @@ flowchart TB
     subgraph Client ["Frontend (React 19 + Vite)"]
         UI[Tailwind CSS & Radix UI]
         RQ[TanStack Query & Zustand]
-        RTC[WebRTC PeerConnection Hook]
+        LK_C[LiveKit Client Hook<br/>livekit-client]
         SIO_C[Socket.IO Client]
     end
 
     subgraph Server ["Backend (NestJS 11)"]
         REST[REST Controllers<br/>/api/auth, /api/meeting, etc.]
+        LK_S[LiveKit Token Service<br/>/api/livekit/:roomId/token]
         GATEWAY[WebRTC Socket Gateway]
         AUTH_GUARD[JWT & Google Auth Guards]
+    end
+
+    subgraph Media ["SFU Media Infrastructure"]
+        LIVEKIT[LiveKit SFU Server<br/>livekit/livekit-server]
     end
 
     subgraph Storage ["Databases & External Services"]
@@ -111,15 +117,17 @@ flowchart TB
 
     UI --> RQ
     RQ --> REST
-    RTC <-->|Signaling Offer / Answer / ICE| GATEWAY
-    RTC <=====>|P2P Media Streams| RTC
-    SIO_C <-->|Invites & Events| GATEWAY
+    LK_C <-->|1. Request Room Token| LK_S
+    LK_C <=====>|2. WebRTC Audio/Video/Screen Tracks| LIVEKIT
+    SIO_C <-->|In-Meeting Invites & Signaling| GATEWAY
 
     REST --> AUTH_GUARD
     REST --> MONGO
     REST --> REDIS
     REST --> R2
     REST --> RESEND
+    LK_S --> MONGO
+    LK_S -.->|Room Management| LIVEKIT
     AUTH_GUARD --> GOOGLE
     GATEWAY --> REDIS
     GATEWAY --> MONGO
@@ -135,13 +143,14 @@ flowchart TB
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/), Radix UI primitives, Lucide Icons, React Icons
 - **State & Data Fetching**: [TanStack Query v5](https://tanstack.com/query), [Zustand](https://zustand-demo.pmnd.rs/)
 - **Routing**: [React Router v7](https://reactrouter.com/)
-- **Real-Time & Media**: [Socket.IO Client](https://socket.io/), WebRTC API, `react-webcam`
+- **Real-Time & SFU Media**: [LiveKit Client SDK](https://docs.livekit.io/realtime/client-sdks/javascript/) (`livekit-client`), [Socket.IO Client](https://socket.io/), WebRTC API
 - **Charts & Visualization**: [Recharts](https://recharts.org/)
 - **Forms & Validation**: `react-hook-form`, `zod`, `@hookform/resolvers`
 
 ### Backend
 - **Framework**: [NestJS 11](https://nestjs.com/) (Express platform)
 - **Language**: TypeScript
+- **SFU Media Server & Token SDK**: [LiveKit Server SDK](https://github.com/livekit/server-sdk-js) (`livekit-server-sdk`), [LiveKit Server](https://livekit.io/)
 - **Database ORM/ODM**: [Mongoose](https://mongoosejs.com/) with MongoDB
 - **Caching & Ephemeral State**: [ioredis](https://github.com/redis/ioredis) (Redis / Upstash)
 - **Signaling Server**: `@nestjs/websockets` & `@nestjs/platform-socket.io`
@@ -156,7 +165,7 @@ flowchart TB
 ```text
 meet-up/
 ├── backend/                        # NestJS Backend Application
-│   ├── docker-compose.yml          # Local MongoDB container definition
+│   ├── docker-compose.yml          # Local MongoDB, Redis & LiveKit SFU definitions
 │   ├── Dockerfile                  # Container build instructions
 │   ├── package.json
 │   ├── tsconfig.json
@@ -165,6 +174,7 @@ meet-up/
 │       ├── app.module.ts           # Root module & MongoDB integration
 │       ├── auth/                   # Authentication (Local & Google OAuth)
 │       ├── friend/                 # Friend request & user management
+│       ├── livekit/                # LiveKit SFU token generation & room lifecycle
 │       ├── meeting/                # Meeting scheduling & state management
 │       ├── recent-log/             # Activity audit logs
 │       ├── redis/                  # Redis connection provider
@@ -194,7 +204,7 @@ meet-up/
 │       │   ├── meeting/            # Meeting list & scheduler dialogs
 │       │   ├── profile/            # User profile management
 │       │   └── report/             # Visual reports & CSV export
-│       └── util/                   # API hooks, Axios instance, WebRTC custom hook
+│       └── util/                   # API hooks, Axios instance, LiveKit hook (livekit-hook.ts)
 └── README.md                       # Project documentation
 ```
 
@@ -205,9 +215,10 @@ meet-up/
 Ensure you have the following installed on your machine:
 - **Node.js**: `v20.x` or `v22.x` (LTS recommended)
 - **pnpm**: `v9.x` or `v10.x` (`npm install -g pnpm`)
-- **Docker & Docker Compose**: (Optional, for running MongoDB & Redis locally)
+- **Docker & Docker Compose**: For running MongoDB, Redis, and LiveKit SFU Server locally
 - **MongoDB**: Local instance (`localhost:27017`) or [MongoDB Atlas](https://www.mongodb.com/atlas)
 - **Redis**: Local instance (`localhost:6379`) or [Upstash Redis](https://upstash.com/)
+- **LiveKit Server**: Running via Docker Compose (`livekit/livekit-server:latest`) or [LiveKit Cloud](https://cloud.livekit.io/)
 - External service credentials (optional for full feature testing):
   - [Google Cloud Console](https://console.cloud.google.com/) for OAuth Client ID & Secret
   - [Cloudflare R2](https://developers.cloudflare.com/r2/) or AWS S3 for avatar storage
@@ -247,7 +258,7 @@ PORT=3000
 NODE_ENV=development
 
 # Database (MongoDB)
-MONGODB_URI=mongodb://your_username:your_password@127.0.0.1:27017/_your_db_name_?authSource=admin
+MONGODB_URI=mongodb://your_username:your_password@127.0.0.1:27017/your_db_name?authSource=admin
 
 # Redis
 REDIS_URL=redis://127.0.0.1:6379
@@ -266,6 +277,11 @@ MONGO_INITDB_ROOT_PASSWORD=your_password
 # Allowed Frontend URL for CORS & redirects
 FRONTEND_URL=http://localhost:5173
 
+# LiveKit SFU Media Server
+LIVEKIT_API_KEY=devkey
+LIVEKIT_API_SECRET=secret
+LIVEKIT_URL=ws://127.0.0.1:7880
+
 # Resend Mailer (Optional for dev)
 RESEND_API_KEY=re_your_resend_api_key
 RESEND_FROM_EMAIL=no-reply@yourdomain.com
@@ -283,12 +299,15 @@ R2_BUCKET_NAME=meetup
 R2_PUBLIC_URL=https://pub-your-bucket-id.r2.dev
 ```
 
-#### Step 2.3: Start Local Database (MongoDB)
-If using Docker, start the MongoDB container:
+#### Step 2.3: Start Local Services (MongoDB, Redis & LiveKit SFU)
+Start all supporting services via Docker Compose:
 ```bash
 docker compose up -d
 ```
-*(Ensure your Redis instance is also running locally on port `6379`, or configure `REDIS_URL` to point to a free Upstash Redis instance).*
+This boots up:
+- **`meetup-mongo`**: MongoDB on port `27017`
+- **`meetup-redis`**: Redis on port `6379`
+- **`meetup-livekit`**: LiveKit SFU server on ports `7880`, `7881`, and `50000-50020/udp`
 
 #### Step 2.4: Start the Backend Server
 ```bash
@@ -319,6 +338,7 @@ Create a `.env` file in the `frontend/` directory:
 ```env
 VITE_API_URL=http://localhost:3000/api
 VITE_SOCKET_URL=http://localhost:3000
+VITE_LIVEKIT_URL=ws://localhost:7880
 ```
 
 #### Step 3.3: Start Frontend Development Server
@@ -346,6 +366,9 @@ The application will be accessible at: **`http://localhost:5173`**
 | `ACCESS_EXPIRES_IN` | No | `900` | Access token lifespan in seconds (15 min) |
 | `REFRESH_EXPIRES_IN` | No | `604800` | Refresh token lifespan in seconds (7 days) |
 | `FRONTEND_URL` | **Yes** | `http://localhost:5173` | Allowed CORS origin & OAuth redirection URL |
+| `LIVEKIT_API_KEY` | **Yes** | `devkey` | API key for signing LiveKit SFU tokens |
+| `LIVEKIT_API_SECRET` | **Yes** | `secret` | Secret key for signing LiveKit SFU tokens |
+| `LIVEKIT_URL` | **Yes** | `ws://127.0.0.1:7880` | WebSocket URL to LiveKit SFU media server |
 | `RESEND_API_KEY` | No | — | Resend API key for sending reset password emails |
 | `RESEND_FROM_EMAIL` | No | — | From address for emails (`no-reply@domain.com`) |
 | `GOOGLE_CLIENT_ID` | No | — | Google Cloud OAuth 2.0 Client ID |
@@ -363,27 +386,37 @@ The application will be accessible at: **`http://localhost:5173`**
 |---|:---:|:---:|---|
 | `VITE_API_URL` | **Yes** | `http://localhost:3000/api` | Base URL for REST API calls |
 | `VITE_SOCKET_URL` | **Yes** | `http://localhost:3000` | Base URL for Socket.IO signaling connection |
+| `VITE_LIVEKIT_URL` | **Yes** | `ws://localhost:7880` | WebSocket URL to LiveKit SFU media server |
 
 ---
 
 ## 🐳 Database & Docker Setup
 
-The project includes a `docker-compose.yml` file in `backend/` for quick local database provisioning:
+The project includes a `docker-compose.yml` file in `backend/` for quick local service provisioning:
 
 ```bash
-# Start MongoDB container
+# Start all containers (MongoDB, Redis, LiveKit SFU)
 cd backend
 docker compose up -d
 
-# Check status
+# Check status of running containers
 docker compose ps
+
+# View LiveKit SFU server logs
+docker compose logs -f meetup-livekit
 
 # View database logs
 docker compose logs -f meetup-mongo
 
-# Stop container
+# Stop containers
 docker compose down
 ```
+
+### Services included in `docker-compose.yml`:
+- **`meetup-backend`**: Main NestJS application container (port `3000`)
+- **`meetup-mongo`**: MongoDB document database (port `27017`)
+- **`meetup-redis`**: Redis ephemeral cache & token store (port `6379`)
+- **`meetup-livekit`**: LiveKit SFU server (port `7880` HTTP/WS, `7881` TCP fallback, `50000-50020/udp` WebRTC media)
 
 ---
 
@@ -405,6 +438,11 @@ docker compose down
 | `GET` | `/api/auth/google` | Trigger Google OAuth 2.0 authentication | No |
 | `GET` | `/api/auth/google/callback`| Google OAuth redirect callback | No |
 | `POST` | `/api/auth/google/exchange`| Exchange one-time OAuth code for cookies | No |
+
+#### LiveKit SFU (`/api/livekit`)
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|:---:|
+| `GET` | `/api/livekit/:roomId/token` | Mint signed LiveKit JWT access token with room permissions (`roomJoin`, `canPublish`, `canSubscribe`, `roomAdmin`) | Yes |
 
 #### Meetings (`/api/meeting`)
 | Method | Endpoint | Description | Auth Required |
@@ -446,9 +484,9 @@ Authentication: Verified using `accessToken` from handshake cookies.
 
 #### Client to Server
 - `join-meeting` (`roomId: string`): Request to enter meeting room.
-- `webrtc-offer` (`{ roomId, targetSocketId, offer }`): Send SDP offer to peer.
-- `webrtc-answer` (`{ roomId, targetSocketId, answer }`): Send SDP answer to peer.
-- `ice-candidate` (`{ roomId, targetSocketId, candidate }`): Relay ICE candidate.
+- `webrtc-offer` (`{ roomId, targetSocketId, offer }`): Send SDP offer to peer (legacy fallback).
+- `webrtc-answer` (`{ roomId, targetSocketId, answer }`): Send SDP answer to peer (legacy fallback).
+- `ice-candidate` (`{ roomId, targetSocketId, candidate }`): Relay ICE candidate (legacy fallback).
 - `leave-meeting` (`{ roomId: string }`): Leave active meeting room.
 - `end-meeting` (`{ roomId: string }`): Host ends meeting for everyone.
 - `invite-friend` (`{ recipientId, roomId, message? }`): Send real-time call invitation.
@@ -488,19 +526,25 @@ Authentication: Verified using `accessToken` from handshake cookies.
 
 ## 💡 Troubleshooting & Gotchas
 
-1. **Camera or Mic Not Working**:
+1. **LiveKit SFU Connection Issues**:
+   - Ensure the LiveKit server container is running: `docker compose ps meetup-livekit`.
+   - Verify that `LIVEKIT_URL` in `backend/.env` (typically `ws://127.0.0.1:7880`) and `VITE_LIVEKIT_URL` in `frontend/.env` (typically `ws://localhost:7880`) match your LiveKit server port.
+   - For WebRTC audio/video transport, ensure UDP ports `50000-50020/udp` are exposed and not blocked by local firewalls or VPNs.
+   - Ensure `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` match between `backend/.env` and `docker-compose.yml`.
+
+2. **Camera or Mic Not Working**:
    - WebRTC requires `localhost` or a secure context (`HTTPS`). If testing across different devices on a local network, configure HTTPS or use a tunneling tool like Ngrok.
    - Ensure browser site permissions for camera and microphone are granted.
 
-2. **CORS Errors**:
+3. **CORS Errors**:
    - Ensure `FRONTEND_URL` in `backend/.env` matches your frontend origin (e.g., `http://localhost:5173`).
    - For multiple origins in production, specify comma-separated origins: `FRONTEND_URL=https://meetup.com,https://app.meetup.com`.
 
-3. **Cookies Not Persisting in Dev / Cross-Origin**:
+4. **Cookies Not Persisting in Dev / Cross-Origin**:
    - In development (`NODE_ENV=development`), cookies use `sameSite: 'lax'` and `secure: false`.
    - In production (`NODE_ENV=production`), cookies use `sameSite: 'none'` and `secure: true`, requiring HTTPS on both backend and frontend.
 
-4. **Redis Connection Issues**:
+5. **Redis Connection Issues**:
    - Ensure Redis is running and matches your `REDIS_URL`. If using Upstash over TLS, prefix the connection string with `rediss://`.
 
 ---
