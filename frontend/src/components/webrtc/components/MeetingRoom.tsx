@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { type RemoteParticipant, useWebRTC } from "@/util/hooks/webrtc-hook";
+import { type RemoteParticipant, useLiveKit } from "@/util/hooks/livekit-hook";
 import { useEndMeeting, useGetMeeting } from "@/util/api/api-hooks/use-meeting";
 import { MeetingFriendsSheet } from "./MeetingFriendsSheet";
 import {
@@ -151,7 +151,7 @@ function MeetingRoom({
     toggleScreenShare,
     leaveMeeting,
     endMeeting: emitEndMeeting,
-  } = useWebRTC(roomId, isMicOn, isCameraOn, onLeave);
+  } = useLiveKit(roomId, isMicOn, isCameraOn, onLeave);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const singleRemoteVideoRef = useRef<HTMLVideoElement>(null);
