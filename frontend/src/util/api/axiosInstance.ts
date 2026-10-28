@@ -5,6 +5,50 @@ export const axiosInstance = axios.create({
   withCredentials: true,
 });
 
+// CSRF token caching and queue
+let csrfToken: string | null = null;
+let csrfPromise: Promise<string | null> | null = null;
+
+export const getCsrfToken = async (): Promise<string | null> => {
+  if (csrfToken) return csrfToken;
+  if (!csrfPromise) {
+    csrfPromise = axiosInstance
+      .get<{ csrfToken: string }>("/csrf-token")
+      .then((res) => {
+        csrfToken = res.data.csrfToken;
+        return csrfToken;
+      })
+      .catch((err) => {
+        console.error("Failed to fetch CSRF token:", err);
+        return null;
+      })
+      .finally(() => {
+        csrfPromise = null;
+      });
+  }
+  return csrfPromise;
+};
+
+// Eagerly prefetch CSRF token on startup
+getCsrfToken();
+
+// Request interceptor to attach x-csrf-token for state-changing requests
+axiosInstance.interceptors.request.use(async (config) => {
+  const method = config.method?.toLowerCase();
+  const isMutating =
+    method && ["post", "patch", "put", "delete"].includes(method);
+
+  if (isMutating && !config.url?.includes("/csrf-token")) {
+    const token = await getCsrfToken();
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers["x-csrf-token"] = token;
+    }
+  }
+
+  return config;
+});
+
 // Flag and queue to prevent concurrent /auth/refresh calls
 let isRefreshing = false;
 let failedQueue: Array<{
@@ -42,6 +86,23 @@ axiosInstance.interceptors.response.use(
     const originalRequest = error.config;
     if (!originalRequest) {
       return Promise.reject(error);
+    }
+
+    // Handle invalid or expired CSRF token (403 Forbidden with CSRF error)
+    if (
+      error.response?.status === 403 &&
+      typeof error.response?.data?.message === "string" &&
+      error.response.data.message.toLowerCase().includes("csrf") &&
+      !originalRequest._csrfRetry
+    ) {
+      originalRequest._csrfRetry = true;
+      csrfToken = null;
+      const newToken = await getCsrfToken();
+      if (newToken) {
+        originalRequest.headers = originalRequest.headers || {};
+        originalRequest.headers["x-csrf-token"] = newToken;
+        return axiosInstance(originalRequest);
+      }
     }
 
     const isBypassUrl = AUTH_BYPASS_URLS.some((url) =>

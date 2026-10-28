@@ -77,6 +77,9 @@
   - Dual authentication: Local email/password authentication & Google OAuth 2.0.
   - Secure token architecture: Short-lived JWT `accessToken` (15m) and persistent `refreshToken` (7d) delivered via `httpOnly` secure cookies.
   - State-of-the-art Google OAuth flow using ephemeral one-time authorization codes (30s TTL in Redis) exchanged via POST to eliminate cookie-dropping issues on cross-domain 302 redirects.
+  - **Granular Rate Limiting**: Global baseline of 60 req/min powered by `@nestjs/throttler`, with strict limits on brute-force sensitive routes (5 req/min on login, register, and password reset; 10 req/min on meeting mutations; 5 req/min on CSV reports).
+  - **CSRF Protection**: Double Submit Cookie protection via `csrf-csrf`, exposing `/api/csrf-token` with automatic frontend Axios interceptor injection and transparent renewal.
+  - **HTTP Security Headers**: Hardened using `helmet` for defense against Clickjacking, MIME sniffing, and cross-site protocol downgrades.
   - Password reset workflows powered by Resend transactional emails.
 
 - **Asset Storage & Cloud**:
@@ -150,6 +153,7 @@ flowchart TB
 ### Backend
 - **Framework**: [NestJS 11](https://nestjs.com/) (Express platform)
 - **Language**: TypeScript
+- **Security & Protection**: [Helmet](https://helmetjs.github.io/) (HTTP security headers), [csrf-csrf](https://github.com/Psifi-Solutions/csrf-csrf) (Double Submit CSRF protection), [@nestjs/throttler](https://github.com/nestjs/throttler) (Rate limiting)
 - **SFU Media Server & Token SDK**: [LiveKit Server SDK](https://github.com/livekit/server-sdk-js) (`livekit-server-sdk`), [LiveKit Server](https://livekit.io/)
 - **Database ORM/ODM**: [Mongoose](https://mongoosejs.com/) with MongoDB
 - **Caching & Ephemeral State**: [ioredis](https://github.com/redis/ioredis) (Redis / Upstash)
@@ -264,9 +268,10 @@ MONGODB_URI=mongodb://your_username:your_password@127.0.0.1:27017/your_db_name?a
 REDIS_URL=redis://127.0.0.1:6379
 REDIS_TTL=3600
 
-# Authentication & JWT Secrets
+# Authentication & Security Secrets
 ACCESS_SECRET=your_jwt_access_secret_key_min_32_characters
 REFRESH_SECRET=your_jwt_refresh_secret_key_min_32_characters
+CSRF_SECRET=your_csrf_secret_key_min_32_characters
 ACCESS_EXPIRES_IN=900
 REFRESH_EXPIRES_IN=604800
 
@@ -363,6 +368,7 @@ The application will be accessible at: **`http://localhost:5173`**
 | `REDIS_TTL` | No | `3600` | Redis default cache TTL in seconds |
 | `ACCESS_SECRET` | **Yes** | — | Secret key for signing JWT access tokens |
 | `REFRESH_SECRET` | **Yes** | — | Secret key for signing JWT refresh tokens |
+| `CSRF_SECRET` | **Yes** | — | Secret key for signing and validating CSRF tokens |
 | `ACCESS_EXPIRES_IN` | No | `900` | Access token lifespan in seconds (15 min) |
 | `REFRESH_EXPIRES_IN` | No | `604800` | Refresh token lifespan in seconds (7 days) |
 | `FRONTEND_URL` | **Yes** | `http://localhost:5173` | Allowed CORS origin & OAuth redirection URL |
@@ -424,9 +430,10 @@ docker compose down
 
 ### REST API Endpoints
 
-#### Authentication (`/api/auth`)
+#### Authentication & Security (`/api/auth`, `/api/csrf-token`)
 | Method | Endpoint | Description | Auth Required |
 |---|---|---|:---:|
+| `GET` | `/api/csrf-token` | Issue signed double-submit CSRF token & cookie | No |
 | `POST` | `/api/auth/register` | Register new user (supports avatar upload) | No |
 | `POST` | `/api/auth/login` | Login with email/password (sets cookies) | No |
 | `POST` | `/api/auth/logout` | Clears authentication cookies & invalidates session | Yes |
@@ -546,6 +553,11 @@ Authentication: Verified using `accessToken` from handshake cookies.
 
 5. **Redis Connection Issues**:
    - Ensure Redis is running and matches your `REDIS_URL`. If using Upstash over TLS, prefix the connection string with `rediss://`.
+
+6. **CSRF & Rate-Limiting Gotchas**:
+   - Mutating requests (`POST`, `PATCH`, `DELETE`) require an `x-csrf-token` header. The frontend `axiosInstance` manages this automatically by prefetching `/api/csrf-token` and retrying on invalid tokens.
+   - If calling the API externally via cURL or Postman, call `GET /api/csrf-token` first, grab the returned `csrfToken` and `x-csrf-token` cookie, and include them in the request.
+   - If you encounter HTTP 429 (`Too Many Requests`), the endpoint is rate-limited by `@nestjs/throttler` (default 60 req/min, 5 req/min on authentication routes).
 
 ---
 
