@@ -17,11 +17,13 @@ import { MeetingQueryDto } from './dto/meeting-query.dto';
 import type { Request } from 'express';
 import { TokenPayLoad } from 'src/types/tokenPayload';
 import { JwtAuthGuard } from 'src/strategy/auth/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('meeting')
 export class MeetingController {
   constructor(private readonly meetingService: MeetingService) { }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post()
   @UseGuards(JwtAuthGuard)
   createMeeting(
@@ -64,6 +66,7 @@ export class MeetingController {
     return this.meetingService.ValidateJoinMeeting(roomId, user.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post(':roomId/end')
   @UseGuards(JwtAuthGuard)
   end(@Req() req: Request, @Param('roomId') roomId: string) {
@@ -74,6 +77,7 @@ export class MeetingController {
     return this.meetingService.endMeeting(roomId, user.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Patch(':roomId/cancel')
   @UseGuards(JwtAuthGuard)
   cancelMeeting(@Req() req: Request, @Param('roomId') roomId: string) {
@@ -84,6 +88,7 @@ export class MeetingController {
     return this.meetingService.cancelMeeting(roomId, user.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post(':roomId/cancel')
   @UseGuards(JwtAuthGuard)
   cancelMeetingPost(@Req() req: Request, @Param('roomId') roomId: string) {
@@ -94,6 +99,7 @@ export class MeetingController {
     return this.meetingService.cancelMeeting(roomId, user.id);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Patch(':roomId')
   @UseGuards(JwtAuthGuard)
   updateMeeting(

@@ -12,6 +12,7 @@ import { JwtAuthGuard } from 'src/strategy/auth/jwt-auth.guard';
 import { TokenPayLoad } from 'src/types/tokenPayload';
 import { ReportQueryDto } from './dto/report-query.dto';
 import { ReportService } from './report.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('report')
 @UseGuards(JwtAuthGuard)
@@ -54,6 +55,7 @@ export class ReportController {
     return this.reportService.getDistribution(query, user.id);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Get('export')
   async exportReport(
     @Query() query: ReportQueryDto,

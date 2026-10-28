@@ -26,6 +26,7 @@ import { VerifyToken } from 'src/utils/verify-token';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { GoogleAuthGuard } from 'src/strategy/auth/google.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -68,6 +69,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   @UseInterceptors(FileInterceptor('avatar', multerMemoryConfig))
   async create(
@@ -80,6 +82,7 @@ export class AuthController {
     return await this.authService.create(createAuthDto, file);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('login')
   @HttpCode(200)
   async login(
@@ -105,6 +108,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('logout')
   @HttpCode(200)
   async logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
@@ -130,6 +134,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Get('refresh')
   async refresh(
     @Req() req: Request,
@@ -176,6 +181,7 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Patch('profile')
   @UseInterceptors(FileInterceptor('avatar', multerMemoryConfig))
   async updateProfile(
@@ -201,11 +207,14 @@ export class AuthController {
     };
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(200)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return await this.authService.requestPasswordReset(forgotPasswordDto.email);
   }
+
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(200)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
@@ -215,12 +224,14 @@ export class AuthController {
     );
   }
 
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   async googleAuth() {
     // Passport redirects to Google login page automatically
   }
 
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(
@@ -249,6 +260,7 @@ export class AuthController {
     }
   }
 
+  @Throttle({ default: { limit: 15, ttl: 60000 } })
   @Post('google/exchange')
   @HttpCode(200)
   async exchangeGoogleCode(

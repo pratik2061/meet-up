@@ -18,6 +18,7 @@ import { FriendService } from './friend.service';
 import { CreateFriendRequestDto } from './dto/create-friend-request.dto';
 import { RespondFriendRequestDto } from './dto/respond-friend-request.dto';
 import { SearchUsersQueryDto } from './dto/search-users-query.dto';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('friends')
 export class FriendController {
@@ -52,6 +53,7 @@ export class FriendController {
     return this.friendService.searchUsers(userId, query);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('request')
   @UseGuards(JwtAuthGuard)
   sendFriendRequest(

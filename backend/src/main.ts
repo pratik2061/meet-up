@@ -4,6 +4,8 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { Request, Response } from 'express';
+import { doubleCsrfProtection, generateCsrfToken } from './config/csrf.config';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const allowedOrigins = (process.env.FRONTEND_URL!)
@@ -26,6 +28,8 @@ async function bootstrap() {
       credentials: true,
     },
   });
+  app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -35,12 +39,20 @@ async function bootstrap() {
     }),
   );
   app.use(cookieParser());
+  app.use(doubleCsrfProtection);
+  app.use(helmet())
 
   app.setGlobalPrefix('api');
-  const http = app.getHttpAdapter()
+  const http = app.getHttpAdapter();
+
+  http.get('/api/csrf-token', (req: Request, res: Response) => {
+    const csrfToken = generateCsrfToken(req, res);
+    res.json({ csrfToken });
+  });
+
   http.get('/api/health', (_req: Request, res: Response) => {
-    res.send("server is healthy")
-  })
+    res.send("server is healthy");
+  });
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 }
 bootstrap();

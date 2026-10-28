@@ -14,9 +14,20 @@ import { MailService } from './resend/resend.service';
 import { FriendModule } from './friend/friend.module';
 import { UploadModule } from './upload/upload.module';
 import { LiveKitModule } from './livekit/livekit.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 60,
+        },
+      ],
+      skipIf: (context) => context.getType() !== 'http',
+    }),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -51,6 +62,9 @@ import { LiveKitModule } from './livekit/livekit.module';
     UploadModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MailService],
+  providers: [AppService, MailService, {
+    provide: APP_GUARD,
+    useClass: ThrottlerGuard
+  }],
 })
 export class AppModule { }
