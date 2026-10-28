@@ -48,7 +48,6 @@ services:
     command: --dev --bind 0.0.0.0
     ports:
       - "7880:7880"
-      - "7881:7881"
       - "50000-50020:50000-50020/udp"
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
