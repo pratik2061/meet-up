@@ -4,7 +4,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { Request, Response } from 'express';
-import { doubleCsrfProtection, generateCsrfToken } from './config/csrf.config';
+import { doubleCsrfProtection } from './config/csrf.config';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -23,12 +23,18 @@ async function bootstrap() {
             return callback(null, true);
           }
         }
-        callback(new Error('Not allowed by CORS'));
+        callback(null, false);
       },
       credentials: true,
     },
   });
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -40,15 +46,9 @@ async function bootstrap() {
   );
   app.use(cookieParser());
   app.use(doubleCsrfProtection);
-  app.use(helmet())
 
   app.setGlobalPrefix('api');
   const http = app.getHttpAdapter();
-
-  http.get('/api/csrf-token', (req: Request, res: Response) => {
-    const csrfToken = generateCsrfToken(req, res);
-    res.json({ csrfToken });
-  });
 
   http.get('/api/health', (_req: Request, res: Response) => {
     res.send("server is healthy");
