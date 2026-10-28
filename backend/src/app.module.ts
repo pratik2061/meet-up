@@ -13,6 +13,7 @@ import { MailModule } from './resend/resend.module';
 import { MailService } from './resend/resend.service';
 import { FriendModule } from './friend/friend.module';
 import { UploadModule } from './upload/upload.module';
+import { LiveKitModule } from './livekit/livekit.module';
 
 @Module({
   imports: [
@@ -34,6 +35,8 @@ import { UploadModule } from './upload/upload.module';
     WebrtcModule,
 
     MeetingModule,
+
+    LiveKitModule,
 
     RedisModule,
 
